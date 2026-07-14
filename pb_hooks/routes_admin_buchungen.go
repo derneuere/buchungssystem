@@ -7,6 +7,7 @@ package main
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pocketbase/dbx"
@@ -99,67 +100,102 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 				return apis.NewNotFoundError("Buchung nicht gefunden.", nil)
 			}
 			var body struct {
-				RaumID string `json:"raum_id"`
+				RaumID   string `json:"raum_id"`
+				Trotzdem bool   `json:"trotzdem"`
+				Grund    string `json:"grund"`
 			}
 			_ = e.BindBody(&body)
+
+			cfg, _, err := ladeEinstellungen(app)
+			if err != nil {
+				return apis.NewApiError(http.StatusInternalServerError, "Konfiguration fehlt.", nil)
+			}
+			ang, err := app.FindRecordById("angebotsarten", b.GetString("angebotsart"))
+			if err != nil || ang == nil {
+				return apis.NewApiError(http.StatusInternalServerError, "Angebotsart fehlt.", nil)
+			}
+			start := b.GetDateTime("start").Time()
+			von := localMinutes(start)
+			bis := localMinutes(b.GetDateTime("ende").Time())
 
 			zuordnungen, err := app.FindRecordsByFilter("buchung_referenten",
 				"buchung = {:b} && geplant = true", "", 0, 0, dbx.Params{"b": b.Id})
 			if err != nil {
 				return apis.NewApiError(http.StatusInternalServerError, "Zuordnungen konnten nicht geladen werden.", nil)
 			}
-			if len(zuordnungen) == 0 {
-				return apis.NewBadRequestError("Es sind keine Referent:innen zugeordnet.", nil)
+			geplant := len(zuordnungen)
+			minRef := ang.GetInt("min_referenten")
+			benoetigt := BenoetigteReferenten(minRef, ang.GetInt("betreuungsschluessel"), b.GetInt("teilnehmer_geplant"))
+
+			benoetigtRaum := ang.GetBool("benoetigt_raum")
+			raumID := body.RaumID
+			if raumID == "" {
+				raumID = b.GetString("raum")
+			}
+			// HARTER Block: gewaehlter Raum ist belegt (auch mit trotzdem nicht ueberschreibbar).
+			if benoetigtRaum && raumID != "" {
+				belegt, err := raumBelegt(app, raumID, start, von, bis, cfg.PufferMinuten, b.Id)
+				if err != nil {
+					return apis.NewApiError(http.StatusInternalServerError, "Raumpruefung fehlgeschlagen.", nil)
+				}
+				if belegt {
+					return apis.NewApiError(http.StatusConflict, "Der gewaehlte Raum ist zu diesem Zeitpunkt bereits belegt. Bitte einen anderen Raum waehlen.", nil)
+				}
 			}
 
-			start := b.GetDateTime("start").Time()
-			von := localMinutes(start)
-			bis := localMinutes(b.GetDateTime("ende").Time())
-			cfg, _, err := ladeEinstellungen(app)
-			if err != nil {
-				return apis.NewApiError(http.StatusInternalServerError, "Konfiguration fehlt.", nil)
-			}
-
-			// Kapazitäts-Recheck: kein zugeordneter Referent darf jetzt kollidieren.
+			kollision := false
 			for _, z := range zuordnungen {
 				koll, err := HatKollision(app, z.GetString("referent"), start, von, bis, cfg.PufferMinuten, b.Id)
 				if err != nil {
-					return apis.NewApiError(http.StatusInternalServerError, "Prüfung fehlgeschlagen.", nil)
+					return apis.NewApiError(http.StatusInternalServerError, "Pruefung fehlgeschlagen.", nil)
 				}
 				if koll {
-					return apis.NewApiError(http.StatusConflict, "Ein:e zugeordnete:r Referent:in ist inzwischen anderweitig verplant.", nil)
+					kollision = true
+					break
 				}
+			}
+			raumOffen := benoetigtRaum && raumID == ""
+			unterbesetzt := geplant < benoetigt
+			hatWarnung := unterbesetzt || raumOffen || kollision
+
+			if hatWarnung && !body.Trotzdem {
+				return e.JSON(http.StatusUnprocessableEntity, map[string]any{
+					"warnung":      true,
+					"geplant":      geplant,
+					"benoetigt":    benoetigt,
+					"min":          minRef,
+					"unterbesetzt": unterbesetzt,
+					"raum_offen":   raumOffen,
+					"kollision":    kollision,
+				})
+			}
+			if hatWarnung && strings.TrimSpace(body.Grund) == "" {
+				return apis.NewBadRequestError("Bitte einen Grund fuer die Bestaetigung trotz Warnung angeben.", nil)
 			}
 
-			// Raumprüfung (nur wenn Angebotsart Raum benötigt).
-			ang, err := app.FindRecordById("angebotsarten", b.GetString("angebotsart"))
-			if err != nil || ang == nil {
-				return apis.NewApiError(http.StatusInternalServerError, "Angebotsart fehlt.", nil)
-			}
-			if ang.GetBool("benoetigt_raum") {
-				raumID := body.RaumID
-				if raumID == "" {
-					raumID = b.GetString("raum")
-				}
-				if raumID == "" {
-					return apis.NewBadRequestError("Für dieses Angebot ist ein Raum erforderlich.", nil)
-				}
-				belegt, err := raumBelegt(app, raumID, start, von, bis, cfg.PufferMinuten, b.Id)
-				if err != nil {
-					return apis.NewApiError(http.StatusInternalServerError, "Raumprüfung fehlgeschlagen.", nil)
-				}
-				if belegt {
-					return apis.NewApiError(http.StatusConflict, "Der Raum ist zu diesem Zeitpunkt bereits belegt.", nil)
-				}
+			if benoetigtRaum && raumID != "" {
 				b.Set("raum", raumID)
 			}
-
 			b.Set("status", "bestaetigt")
+			b.Set("unterbesetzt", unterbesetzt)
+			b.Set("raum_offen", raumOffen)
+			if hatWarnung {
+				grund := sanitize(body.Grund, 2000)
+				b.Set("bestaetigt_trotz_grund", grund)
+				notiz := strings.TrimSpace(b.GetString("interne_notiz"))
+				zusatz := "Bestaetigt trotz Warnung: " + grund
+				if notiz != "" {
+					notiz += "\n" + zusatz
+				} else {
+					notiz = zusatz
+				}
+				b.Set("interne_notiz", sanitize(notiz, 2000))
+			}
 			if err := app.Save(b); err != nil {
-				return apis.NewApiError(http.StatusInternalServerError, "Bestätigung konnte nicht gespeichert werden.", nil)
+				return apis.NewApiError(http.StatusInternalServerError, "Bestaetigung konnte nicht gespeichert werden.", nil)
 			}
 			sendZusage(app, b)
-			return e.JSON(http.StatusOK, map[string]any{"id": b.Id, "status": "bestaetigt"})
+			return e.JSON(http.StatusOK, map[string]any{"id": b.Id, "status": "bestaetigt", "unterbesetzt": unterbesetzt, "raum_offen": raumOffen})
 		}).Bind(auth)
 
 		// ---- Ablehnen --------------------------------------------------

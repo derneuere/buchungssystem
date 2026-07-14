@@ -15,6 +15,7 @@ export type Rolle = 'mitarbeiter' | 'leitung'
 
 export type BuchungStatus =
   | 'angefragt'
+  | 'warteliste'
   | 'bestaetigt'
   | 'abgelehnt'
   | 'storniert'
@@ -78,6 +79,7 @@ export const BUNDESLAENDER: { value: Bundesland; label: string }[] = [
 
 export const STATUS_LABEL: Record<BuchungStatus, string> = {
   angefragt: 'Angefragt',
+  warteliste: 'Warteliste',
   bestaetigt: 'Bestätigt',
   abgelehnt: 'Abgelehnt',
   storniert: 'Storniert',
@@ -178,6 +180,9 @@ export interface Buchung extends BaseRecord {
   storno_grund?: string
   ablehnungs_grund?: string
   spam_verdacht: boolean
+  unterbesetzt?: boolean
+  raum_offen?: boolean
+  bestaetigt_trotz_grund?: string
   expand?: {
     angebotsart?: Angebotsart
     thema?: Thema
@@ -258,6 +263,24 @@ export interface BuchungsanfrageResponse {
   id: string
   status: BuchungStatus
   nachricht: string
+}
+
+/** Request-Body für POST /api/admin/buchungen (manuelle/telefonische Erfassung) */
+export interface AdminBuchungInput {
+  angebotsart_id: string
+  thema_id: string
+  start: string // ISO-Datetime
+  teilnehmer_geplant: number
+  herkunft_land: string
+  herkunft_bundesland?: Bundesland | ''
+  herkunft_einrichtungstyp_id?: string
+  herkunft_einrichtungsname?: string
+  herkunft_ort?: string
+  kontakt_name: string
+  kontakt_email: string
+  kontakt_telefon?: string
+  nachricht?: string
+  interne_notiz?: string
 }
 
 // ---- Admin API-Contracts --------------------------------------------------

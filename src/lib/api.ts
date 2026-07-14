@@ -1,5 +1,6 @@
 import { pb } from './pocketbase'
 import type {
+  AdminBuchungInput,
   BuchungsanfrageInput,
   BuchungsanfrageResponse,
   HerkunftReportZeile,
@@ -59,10 +60,20 @@ export function adminReferentPruefen(
   })
 }
 
+export interface BestaetigenWarnung {
+  warnung: true
+  geplant: number
+  benoetigt: number
+  min: number
+  unterbesetzt: boolean
+  raum_offen: boolean
+  kollision: boolean
+}
+
 export function adminBestaetigen(
   buchungId: string,
-  body: { raum_id?: string } = {},
-): Promise<{ status: string }> {
+  body: { raum_id?: string; trotzdem?: boolean; grund?: string } = {},
+): Promise<{ status: string; unterbesetzt?: boolean; raum_offen?: boolean }> {
   return pb.send(`/api/admin/buchungen/${buchungId}/bestaetigen`, {
     method: 'POST',
     body,
@@ -84,6 +95,13 @@ export function adminStornieren(
     method: 'POST',
     body,
   })
+}
+
+/** Manuelle/telefonische Erfassung einer Buchung durch das Personal. */
+export function adminBuchungAnlegen(
+  body: AdminBuchungInput,
+): Promise<{ id: string; status: string }> {
+  return pb.send('/api/admin/buchungen', { method: 'POST', body })
 }
 
 // ---- Admin: Reports -------------------------------------------------------

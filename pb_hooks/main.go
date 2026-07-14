@@ -37,6 +37,7 @@ func main() {
 	// Each cluster owns its own register function (split, don't centralize).
 	registerPublicRoutes(app)         // routes_public.go
 	registerAdminBuchungenRoutes(app) // routes_admin_buchungen.go
+	registerAdminBuchungManuell(app)  // routes_admin_buchung_manuell.go — manuelle Erfassung
 	registerAdminReportRoutes(app)    // routes_admin_reports.go
 	registerMitarbeiterRoutes(app)    // routes_mitarbeiter.go — Einladungs-Flow
 	registerMailHooks(app)            // hooks_mail.go — buchungen create-guard

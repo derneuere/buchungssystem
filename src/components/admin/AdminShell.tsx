@@ -6,10 +6,13 @@
 import { useState, type ComponentType, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import {
+  BookOpen,
   CalendarClock,
   CalendarDays,
   CalendarRange,
   ClipboardList,
+  Code2,
+  FilePlus,
   Landmark,
   LayoutDashboard,
   LineChart,
@@ -37,6 +40,7 @@ type NavItem = {
 const HAUPTNAVIGATION: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList },
+  { to: '/admin/buchungen/neu', label: 'Neue Buchung', icon: FilePlus, exact: true },
   { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart },
 ]
 
@@ -52,6 +56,8 @@ const STAMMDATEN_NAVIGATION: NavItem[] = [
 
 const SYSTEM_NAVIGATION: NavItem[] = [
   { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus },
+  { to: '/admin/einbetten', label: 'Einbetten', icon: Code2 },
+  { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen },
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings },
 ]
 

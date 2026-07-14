@@ -18,6 +18,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 import { StatusBadge } from '@/components/admin/StatusBadge'
@@ -35,6 +36,7 @@ function BuchungDetailPage() {
   const { id } = Route.useParams()
   const queryClient = useQueryClient()
   const buchungKey = ['admin', 'buchung', id]
+  const [statusBusy, setStatusBusy] = useState(false)
 
   const buchungQuery = useQuery({
     queryKey: buchungKey,
@@ -48,6 +50,19 @@ function BuchungDetailPage() {
     queryClient.invalidateQueries({ queryKey: buchungKey })
     queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'buchungen', 'liste'] })
+  }
+
+  async function setStatus(neu: 'warteliste' | 'angefragt') {
+    setStatusBusy(true)
+    try {
+      await pb.collection('buchungen').update(id, { status: neu })
+      toast.success(neu === 'warteliste' ? 'Auf Warteliste gesetzt.' : 'Wieder als Anfrage geführt.')
+      invalidateAlles()
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Statusänderung fehlgeschlagen.'))
+    } finally {
+      setStatusBusy(false)
+    }
   }
 
   if (buchungQuery.isLoading) {
@@ -88,6 +103,22 @@ function BuchungDetailPage() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">{buchung.kontakt_name}</h1>
             <StatusBadge status={buchung.status} />
+            {buchung.unterbesetzt && (
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              >
+                Unterbesetzt
+              </Badge>
+            )}
+            {buchung.raum_offen && (
+              <Badge
+                variant="outline"
+                className="border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              >
+                Raum offen
+              </Badge>
+            )}
             {buchung.spam_verdacht && (
               <span className="text-xs font-medium text-destructive">Spam-Verdacht</span>
             )}
@@ -97,7 +128,7 @@ function BuchungDetailPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {buchung.status === 'angefragt' && (
+          {(buchung.status === 'angefragt' || buchung.status === 'warteliste') && (
             <>
               <BestaetigenDialog
                 buchungId={buchung.id}
@@ -112,6 +143,15 @@ function BuchungDetailPage() {
                 trigger={<Button variant="outline">Ablehnen</Button>}
                 onSuccess={invalidateAlles}
               />
+              {buchung.status === 'angefragt' ? (
+                <Button variant="outline" onClick={() => void setStatus('warteliste')} disabled={statusBusy}>
+                  Auf Warteliste
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={() => void setStatus('angefragt')} disabled={statusBusy}>
+                  Wieder als Anfrage
+                </Button>
+              )}
             </>
           )}
           {buchung.status === 'bestaetigt' && (

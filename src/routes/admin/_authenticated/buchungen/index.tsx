@@ -21,7 +21,7 @@ import { StatusBadge } from '@/components/admin/StatusBadge'
 
 const buchungenSearchSchema = z.object({
   status: z
-    .enum(['angefragt', 'bestaetigt', 'abgelehnt', 'storniert', 'verfallen', 'durchgefuehrt'])
+    .enum(['angefragt', 'warteliste', 'bestaetigt', 'abgelehnt', 'storniert', 'verfallen', 'durchgefuehrt'])
     .optional(),
   angebotsart: z.string().optional(),
   von: z.string().optional(),

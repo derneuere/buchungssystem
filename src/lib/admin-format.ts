@@ -112,6 +112,7 @@ export function wochentagLabel(value?: Wochentag | string | null): string {
 /** Badge-Farbklassen je Buchungsstatus (Ergänzung zu den shadcn-Badge-Varianten). */
 export const STATUS_BADGE_CLASS: Record<BuchungStatus, string> = {
   angefragt: 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  warteliste: 'border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300',
   bestaetigt:
     'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
   abgelehnt: 'border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300',

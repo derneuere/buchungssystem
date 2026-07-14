@@ -21,13 +21,16 @@ import { Route as AdminAuthenticatedThemenRouteImport } from './routes/admin/_au
 import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/admin/_authenticated/schliesstage'
 import { Route as AdminAuthenticatedRaeumeRouteImport } from './routes/admin/_authenticated/raeume'
 import { Route as AdminAuthenticatedMitarbeiterRouteImport } from './routes/admin/_authenticated/mitarbeiter'
+import { Route as AdminAuthenticatedHilfeRouteImport } from './routes/admin/_authenticated/hilfe'
 import { Route as AdminAuthenticatedEinstellungenRouteImport } from './routes/admin/_authenticated/einstellungen'
 import { Route as AdminAuthenticatedEinrichtungstypenRouteImport } from './routes/admin/_authenticated/einrichtungstypen'
+import { Route as AdminAuthenticatedEinbettenRouteImport } from './routes/admin/_authenticated/einbetten'
 import { Route as AdminAuthenticatedAuswertungenRouteImport } from './routes/admin/_authenticated/auswertungen'
 import { Route as AdminAuthenticatedAngebotsartenRouteImport } from './routes/admin/_authenticated/angebotsarten'
 import { Route as AdminAuthenticatedReferentenIndexRouteImport } from './routes/admin/_authenticated/referenten/index'
 import { Route as AdminAuthenticatedBuchungenIndexRouteImport } from './routes/admin/_authenticated/buchungen/index'
 import { Route as AdminAuthenticatedReferentenIdRouteImport } from './routes/admin/_authenticated/referenten/$id'
+import { Route as AdminAuthenticatedBuchungenNeuRouteImport } from './routes/admin/_authenticated/buchungen/neu'
 import { Route as AdminAuthenticatedBuchungenIdRouteImport } from './routes/admin/_authenticated/buchungen/$id'
 
 const EmbedRoute = EmbedRouteImport.update({
@@ -95,6 +98,11 @@ const AdminAuthenticatedMitarbeiterRoute =
     path: '/mitarbeiter',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedHilfeRoute = AdminAuthenticatedHilfeRouteImport.update({
+  id: '/hilfe',
+  path: '/hilfe',
+  getParentRoute: () => AdminAuthenticatedRoute,
+} as any)
 const AdminAuthenticatedEinstellungenRoute =
   AdminAuthenticatedEinstellungenRouteImport.update({
     id: '/einstellungen',
@@ -105,6 +113,12 @@ const AdminAuthenticatedEinrichtungstypenRoute =
   AdminAuthenticatedEinrichtungstypenRouteImport.update({
     id: '/einrichtungstypen',
     path: '/einrichtungstypen',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
+const AdminAuthenticatedEinbettenRoute =
+  AdminAuthenticatedEinbettenRouteImport.update({
+    id: '/einbetten',
+    path: '/einbetten',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
 const AdminAuthenticatedAuswertungenRoute =
@@ -137,6 +151,12 @@ const AdminAuthenticatedReferentenIdRoute =
     path: '/referenten/$id',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedBuchungenNeuRoute =
+  AdminAuthenticatedBuchungenNeuRouteImport.update({
+    id: '/buchungen/neu',
+    path: '/buchungen/neu',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
 const AdminAuthenticatedBuchungenIdRoute =
   AdminAuthenticatedBuchungenIdRouteImport.update({
     id: '/buchungen/$id',
@@ -153,8 +173,10 @@ export interface FileRoutesByFullPath {
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
+  '/admin/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
@@ -162,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
+  '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
   '/admin/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
   '/admin/buchungen/': typeof AdminAuthenticatedBuchungenIndexRoute
   '/admin/referenten/': typeof AdminAuthenticatedReferentenIndexRoute
@@ -174,8 +197,10 @@ export interface FileRoutesByTo {
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
+  '/admin/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
@@ -183,6 +208,7 @@ export interface FileRoutesByTo {
   '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
+  '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
   '/admin/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
   '/admin/buchungen': typeof AdminAuthenticatedBuchungenIndexRoute
   '/admin/referenten': typeof AdminAuthenticatedReferentenIndexRoute
@@ -197,8 +223,10 @@ export interface FileRoutesById {
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/_authenticated/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/_authenticated/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
+  '/admin/_authenticated/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/_authenticated/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/_authenticated/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/_authenticated/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/_authenticated/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/_authenticated/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/_authenticated/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
@@ -206,6 +234,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/_authenticated/': typeof AdminAuthenticatedIndexRoute
   '/admin/_authenticated/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
+  '/admin/_authenticated/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
   '/admin/_authenticated/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
   '/admin/_authenticated/buchungen/': typeof AdminAuthenticatedBuchungenIndexRoute
   '/admin/_authenticated/referenten/': typeof AdminAuthenticatedReferentenIndexRoute
@@ -221,8 +250,10 @@ export interface FileRouteTypes {
     | '/buchung/danke'
     | '/admin/angebotsarten'
     | '/admin/auswertungen'
+    | '/admin/einbetten'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
+    | '/admin/hilfe'
     | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
@@ -230,6 +261,7 @@ export interface FileRouteTypes {
     | '/admin/verfuegbarkeiten'
     | '/admin/'
     | '/admin/buchungen/$id'
+    | '/admin/buchungen/neu'
     | '/admin/referenten/$id'
     | '/admin/buchungen/'
     | '/admin/referenten/'
@@ -242,8 +274,10 @@ export interface FileRouteTypes {
     | '/buchung/danke'
     | '/admin/angebotsarten'
     | '/admin/auswertungen'
+    | '/admin/einbetten'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
+    | '/admin/hilfe'
     | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
@@ -251,6 +285,7 @@ export interface FileRouteTypes {
     | '/admin/verfuegbarkeiten'
     | '/admin'
     | '/admin/buchungen/$id'
+    | '/admin/buchungen/neu'
     | '/admin/referenten/$id'
     | '/admin/buchungen'
     | '/admin/referenten'
@@ -264,8 +299,10 @@ export interface FileRouteTypes {
     | '/buchung/danke'
     | '/admin/_authenticated/angebotsarten'
     | '/admin/_authenticated/auswertungen'
+    | '/admin/_authenticated/einbetten'
     | '/admin/_authenticated/einrichtungstypen'
     | '/admin/_authenticated/einstellungen'
+    | '/admin/_authenticated/hilfe'
     | '/admin/_authenticated/mitarbeiter'
     | '/admin/_authenticated/raeume'
     | '/admin/_authenticated/schliesstage'
@@ -273,6 +310,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/verfuegbarkeiten'
     | '/admin/_authenticated/'
     | '/admin/_authenticated/buchungen/$id'
+    | '/admin/_authenticated/buchungen/neu'
     | '/admin/_authenticated/referenten/$id'
     | '/admin/_authenticated/buchungen/'
     | '/admin/_authenticated/referenten/'
@@ -373,6 +411,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedMitarbeiterRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/hilfe': {
+      id: '/admin/_authenticated/hilfe'
+      path: '/hilfe'
+      fullPath: '/admin/hilfe'
+      preLoaderRoute: typeof AdminAuthenticatedHilfeRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
     '/admin/_authenticated/einstellungen': {
       id: '/admin/_authenticated/einstellungen'
       path: '/einstellungen'
@@ -385,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/einrichtungstypen'
       fullPath: '/admin/einrichtungstypen'
       preLoaderRoute: typeof AdminAuthenticatedEinrichtungstypenRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/einbetten': {
+      id: '/admin/_authenticated/einbetten'
+      path: '/einbetten'
+      fullPath: '/admin/einbetten'
+      preLoaderRoute: typeof AdminAuthenticatedEinbettenRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/auswertungen': {
@@ -422,6 +474,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedReferentenIdRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/buchungen/neu': {
+      id: '/admin/_authenticated/buchungen/neu'
+      path: '/buchungen/neu'
+      fullPath: '/admin/buchungen/neu'
+      preLoaderRoute: typeof AdminAuthenticatedBuchungenNeuRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
     '/admin/_authenticated/buchungen/$id': {
       id: '/admin/_authenticated/buchungen/$id'
       path: '/buchungen/$id'
@@ -435,8 +494,10 @@ declare module '@tanstack/react-router' {
 interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedAngebotsartenRoute: typeof AdminAuthenticatedAngebotsartenRoute
   AdminAuthenticatedAuswertungenRoute: typeof AdminAuthenticatedAuswertungenRoute
+  AdminAuthenticatedEinbettenRoute: typeof AdminAuthenticatedEinbettenRoute
   AdminAuthenticatedEinrichtungstypenRoute: typeof AdminAuthenticatedEinrichtungstypenRoute
   AdminAuthenticatedEinstellungenRoute: typeof AdminAuthenticatedEinstellungenRoute
+  AdminAuthenticatedHilfeRoute: typeof AdminAuthenticatedHilfeRoute
   AdminAuthenticatedMitarbeiterRoute: typeof AdminAuthenticatedMitarbeiterRoute
   AdminAuthenticatedRaeumeRoute: typeof AdminAuthenticatedRaeumeRoute
   AdminAuthenticatedSchliesstageRoute: typeof AdminAuthenticatedSchliesstageRoute
@@ -444,6 +505,7 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedVerfuegbarkeitenRoute: typeof AdminAuthenticatedVerfuegbarkeitenRoute
   AdminAuthenticatedIndexRoute: typeof AdminAuthenticatedIndexRoute
   AdminAuthenticatedBuchungenIdRoute: typeof AdminAuthenticatedBuchungenIdRoute
+  AdminAuthenticatedBuchungenNeuRoute: typeof AdminAuthenticatedBuchungenNeuRoute
   AdminAuthenticatedReferentenIdRoute: typeof AdminAuthenticatedReferentenIdRoute
   AdminAuthenticatedBuchungenIndexRoute: typeof AdminAuthenticatedBuchungenIndexRoute
   AdminAuthenticatedReferentenIndexRoute: typeof AdminAuthenticatedReferentenIndexRoute
@@ -452,9 +514,11 @@ interface AdminAuthenticatedRouteChildren {
 const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedAngebotsartenRoute: AdminAuthenticatedAngebotsartenRoute,
   AdminAuthenticatedAuswertungenRoute: AdminAuthenticatedAuswertungenRoute,
+  AdminAuthenticatedEinbettenRoute: AdminAuthenticatedEinbettenRoute,
   AdminAuthenticatedEinrichtungstypenRoute:
     AdminAuthenticatedEinrichtungstypenRoute,
   AdminAuthenticatedEinstellungenRoute: AdminAuthenticatedEinstellungenRoute,
+  AdminAuthenticatedHilfeRoute: AdminAuthenticatedHilfeRoute,
   AdminAuthenticatedMitarbeiterRoute: AdminAuthenticatedMitarbeiterRoute,
   AdminAuthenticatedRaeumeRoute: AdminAuthenticatedRaeumeRoute,
   AdminAuthenticatedSchliesstageRoute: AdminAuthenticatedSchliesstageRoute,
@@ -463,6 +527,7 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
     AdminAuthenticatedVerfuegbarkeitenRoute,
   AdminAuthenticatedIndexRoute: AdminAuthenticatedIndexRoute,
   AdminAuthenticatedBuchungenIdRoute: AdminAuthenticatedBuchungenIdRoute,
+  AdminAuthenticatedBuchungenNeuRoute: AdminAuthenticatedBuchungenNeuRoute,
   AdminAuthenticatedReferentenIdRoute: AdminAuthenticatedReferentenIdRoute,
   AdminAuthenticatedBuchungenIndexRoute: AdminAuthenticatedBuchungenIndexRoute,
   AdminAuthenticatedReferentenIndexRoute:
