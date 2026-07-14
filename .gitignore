@@ -1,0 +1,29 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# backend / runtime
+pb_data/
+pb_public/
+pb_hooks/pocketbase
+pb_hooks/pocketbase.exe
+pb_hooks/*.db
+.tools/
+gotc/
+*.log
+
+# lokale Backend-Artefakte
+pb_hooks/buchung
+pb_hooks/buchung.exe
+pb_hooks/pb_public/
+pb_hooks/pb_data/
