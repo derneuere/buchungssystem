@@ -61,7 +61,7 @@ fi
 
 echo "» Persistent Storage /app/pb_data sicherstellen"
 curl -fsS "${auth[@]}" -X POST "$API/applications/$APP_UUID/storages" \
-  -d "$(jq -n '{name:"buchung_data", mount_path:"/app/pb_data"}')" >/dev/null 2>&1 || echo "  (existiert bereits oder abweichendes Schema — im UI prüfen)"
+  -d "$(jq -n '{type:"persistent", name:"buchung_data", mount_path:"/app/pb_data"}')" >/dev/null 2>&1 || echo "  (existiert bereits — im UI prüfen)"
 
 echo "» Deploy anstoßen"
 curl -fsS "${auth[@]}" "$API/deploy?uuid=$APP_UUID" | jq . || true
