@@ -115,3 +115,28 @@ export function reportReferentenAuslastung(params: {
     .send('/api/admin/reports/referenten-auslastung', { method: 'GET', query: params })
     .then((r: { referenten?: ReferentenAuslastungZeile[] }) => r.referenten ?? [])
 }
+
+// ---- Admin: Mitarbeiter-Einladung ----------------------------------------
+
+export function mitarbeiterEinladen(body: {
+  email: string
+  rolle: 'mitarbeiter' | 'leitung'
+}): Promise<{ id: string; email: string; rolle: string; link: string }> {
+  return pb.send('/api/admin/mitarbeiter/einladen', { method: 'POST', body })
+}
+
+export function einladungPruefen(params: {
+  id: string
+  token: string
+}): Promise<{ valid: boolean; email?: string }> {
+  return pb.send('/api/public/einladung', { method: 'GET', query: params })
+}
+
+export function einladungAnnehmen(body: {
+  id: string
+  token: string
+  name: string
+  password: string
+}): Promise<{ email: string }> {
+  return pb.send('/api/public/einladung/annehmen', { method: 'POST', body })
+}

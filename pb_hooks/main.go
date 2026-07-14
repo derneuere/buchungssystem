@@ -38,6 +38,7 @@ func main() {
 	registerPublicRoutes(app)         // routes_public.go
 	registerAdminBuchungenRoutes(app) // routes_admin_buchungen.go
 	registerAdminReportRoutes(app)    // routes_admin_reports.go
+	registerMitarbeiterRoutes(app)    // routes_mitarbeiter.go — Einladungs-Flow
 	registerMailHooks(app)            // hooks_mail.go — buchungen create-guard
 	registerCron(app)                 // cron.go — Verfall-Job
 	registerStaticServing(app)        // static.go — SPA + CSP (zuletzt)

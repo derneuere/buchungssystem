@@ -13,12 +13,14 @@ import { Route as EmbedRouteImport } from './routes/embed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuchungDankeRouteImport } from './routes/buchung/danke'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminEinladungRouteImport } from './routes/admin/einladung'
 import { Route as AdminAuthenticatedRouteImport } from './routes/admin/_authenticated'
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin/_authenticated/index'
 import { Route as AdminAuthenticatedVerfuegbarkeitenRouteImport } from './routes/admin/_authenticated/verfuegbarkeiten'
 import { Route as AdminAuthenticatedThemenRouteImport } from './routes/admin/_authenticated/themen'
 import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/admin/_authenticated/schliesstage'
 import { Route as AdminAuthenticatedRaeumeRouteImport } from './routes/admin/_authenticated/raeume'
+import { Route as AdminAuthenticatedMitarbeiterRouteImport } from './routes/admin/_authenticated/mitarbeiter'
 import { Route as AdminAuthenticatedEinstellungenRouteImport } from './routes/admin/_authenticated/einstellungen'
 import { Route as AdminAuthenticatedEinrichtungstypenRouteImport } from './routes/admin/_authenticated/einrichtungstypen'
 import { Route as AdminAuthenticatedAuswertungenRouteImport } from './routes/admin/_authenticated/auswertungen'
@@ -46,6 +48,11 @@ const BuchungDankeRoute = BuchungDankeRouteImport.update({
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEinladungRoute = AdminEinladungRouteImport.update({
+  id: '/admin/einladung',
+  path: '/admin/einladung',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminAuthenticatedRoute = AdminAuthenticatedRouteImport.update({
@@ -80,6 +87,12 @@ const AdminAuthenticatedRaeumeRoute =
   AdminAuthenticatedRaeumeRouteImport.update({
     id: '/raeume',
     path: '/raeume',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
+const AdminAuthenticatedMitarbeiterRoute =
+  AdminAuthenticatedMitarbeiterRouteImport.update({
+    id: '/mitarbeiter',
+    path: '/mitarbeiter',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
 const AdminAuthenticatedEinstellungenRoute =
@@ -135,12 +148,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/embed': typeof EmbedRoute
   '/admin': typeof AdminAuthenticatedRouteWithChildren
+  '/admin/einladung': typeof AdminEinladungRoute
   '/admin/login': typeof AdminLoginRoute
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
@@ -154,12 +169,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/embed': typeof EmbedRoute
+  '/admin/einladung': typeof AdminEinladungRoute
   '/admin/login': typeof AdminLoginRoute
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
@@ -175,12 +192,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/embed': typeof EmbedRoute
   '/admin/_authenticated': typeof AdminAuthenticatedRouteWithChildren
+  '/admin/einladung': typeof AdminEinladungRoute
   '/admin/login': typeof AdminLoginRoute
   '/buchung/danke': typeof BuchungDankeRoute
   '/admin/_authenticated/angebotsarten': typeof AdminAuthenticatedAngebotsartenRoute
   '/admin/_authenticated/auswertungen': typeof AdminAuthenticatedAuswertungenRoute
   '/admin/_authenticated/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/_authenticated/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
+  '/admin/_authenticated/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/_authenticated/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/_authenticated/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/_authenticated/themen': typeof AdminAuthenticatedThemenRoute
@@ -197,12 +216,14 @@ export interface FileRouteTypes {
     | '/'
     | '/embed'
     | '/admin'
+    | '/admin/einladung'
     | '/admin/login'
     | '/buchung/danke'
     | '/admin/angebotsarten'
     | '/admin/auswertungen'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
+    | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
     | '/admin/themen'
@@ -216,12 +237,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/embed'
+    | '/admin/einladung'
     | '/admin/login'
     | '/buchung/danke'
     | '/admin/angebotsarten'
     | '/admin/auswertungen'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
+    | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
     | '/admin/themen'
@@ -236,12 +259,14 @@ export interface FileRouteTypes {
     | '/'
     | '/embed'
     | '/admin/_authenticated'
+    | '/admin/einladung'
     | '/admin/login'
     | '/buchung/danke'
     | '/admin/_authenticated/angebotsarten'
     | '/admin/_authenticated/auswertungen'
     | '/admin/_authenticated/einrichtungstypen'
     | '/admin/_authenticated/einstellungen'
+    | '/admin/_authenticated/mitarbeiter'
     | '/admin/_authenticated/raeume'
     | '/admin/_authenticated/schliesstage'
     | '/admin/_authenticated/themen'
@@ -257,6 +282,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   EmbedRoute: typeof EmbedRoute
   AdminAuthenticatedRoute: typeof AdminAuthenticatedRouteWithChildren
+  AdminEinladungRoute: typeof AdminEinladungRoute
   AdminLoginRoute: typeof AdminLoginRoute
   BuchungDankeRoute: typeof BuchungDankeRoute
 }
@@ -289,6 +315,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/login'
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/einladung': {
+      id: '/admin/einladung'
+      path: '/admin/einladung'
+      fullPath: '/admin/einladung'
+      preLoaderRoute: typeof AdminEinladungRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/_authenticated': {
@@ -331,6 +364,13 @@ declare module '@tanstack/react-router' {
       path: '/raeume'
       fullPath: '/admin/raeume'
       preLoaderRoute: typeof AdminAuthenticatedRaeumeRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/mitarbeiter': {
+      id: '/admin/_authenticated/mitarbeiter'
+      path: '/mitarbeiter'
+      fullPath: '/admin/mitarbeiter'
+      preLoaderRoute: typeof AdminAuthenticatedMitarbeiterRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/einstellungen': {
@@ -397,6 +437,7 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedAuswertungenRoute: typeof AdminAuthenticatedAuswertungenRoute
   AdminAuthenticatedEinrichtungstypenRoute: typeof AdminAuthenticatedEinrichtungstypenRoute
   AdminAuthenticatedEinstellungenRoute: typeof AdminAuthenticatedEinstellungenRoute
+  AdminAuthenticatedMitarbeiterRoute: typeof AdminAuthenticatedMitarbeiterRoute
   AdminAuthenticatedRaeumeRoute: typeof AdminAuthenticatedRaeumeRoute
   AdminAuthenticatedSchliesstageRoute: typeof AdminAuthenticatedSchliesstageRoute
   AdminAuthenticatedThemenRoute: typeof AdminAuthenticatedThemenRoute
@@ -414,6 +455,7 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedEinrichtungstypenRoute:
     AdminAuthenticatedEinrichtungstypenRoute,
   AdminAuthenticatedEinstellungenRoute: AdminAuthenticatedEinstellungenRoute,
+  AdminAuthenticatedMitarbeiterRoute: AdminAuthenticatedMitarbeiterRoute,
   AdminAuthenticatedRaeumeRoute: AdminAuthenticatedRaeumeRoute,
   AdminAuthenticatedSchliesstageRoute: AdminAuthenticatedSchliesstageRoute,
   AdminAuthenticatedThemenRoute: AdminAuthenticatedThemenRoute,
@@ -434,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EmbedRoute: EmbedRoute,
   AdminAuthenticatedRoute: AdminAuthenticatedRouteWithChildren,
+  AdminEinladungRoute: AdminEinladungRoute,
   AdminLoginRoute: AdminLoginRoute,
   BuchungDankeRoute: BuchungDankeRoute,
 }
