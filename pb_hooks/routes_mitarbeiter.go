@@ -28,6 +28,20 @@ func registerMitarbeiterRoutes(app *pocketbase.PocketBase) {
 	// Eigener Limiter für die öffentliche Annehmen-Route.
 	limiter := NewIPRateLimiter(10, 10*time.Minute, 40, 24*time.Hour)
 
+	// E-Mail bei JEDEM Schreibvorgang normalisieren (trim + lowercase), damit der
+	// case-/whitespace-sensitive Login-Abgleich zuverlässig greift — unabhängig
+	// vom Schreibpfad (Einladung, Seed-Admin, Superuser-UI). Siehe Migration 0005
+	// für den einmaligen Bestandsabgleich.
+	normalizeEmail := func(e *core.RecordEvent) error {
+		norm := strings.ToLower(strings.TrimSpace(e.Record.GetString("email")))
+		if norm != e.Record.GetString("email") {
+			e.Record.Set("email", norm)
+		}
+		return e.Next()
+	}
+	app.OnRecordCreate("mitarbeiter").BindFunc(normalizeEmail)
+	app.OnRecordUpdate("mitarbeiter").BindFunc(normalizeEmail)
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
 

@@ -50,7 +50,12 @@ function LoginPage() {
   async function onSubmit(values: LoginValues) {
     setSubmitting(true)
     try {
-      await pb.collection('mitarbeiter').authWithPassword(values.email, values.passwort)
+      // E-Mail normalisieren: der PocketBase-Login-Abgleich ist case- und
+      // whitespace-sensitiv, gespeicherte Adressen sind kleingeschrieben. So
+      // scheitert der Login nicht an iOS-Autokapitalisierung oder Autofill-
+      // Leerzeichen (siehe Migration 0005 + Normalisierungs-Hook im Backend).
+      const identity = values.email.trim().toLowerCase()
+      await pb.collection('mitarbeiter').authWithPassword(identity, values.passwort)
       await navigate({ to: '/admin' })
     } catch (err) {
       toast.error(getErrorMessage(err, 'Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.'))
@@ -76,7 +81,11 @@ function LoginPage() {
               <Input
                 id="email"
                 type="email"
+                inputMode="email"
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 aria-invalid={!!errors.email}
                 {...register('email')}
               />
