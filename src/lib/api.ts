@@ -9,6 +9,8 @@ import type {
   SlotsResponse,
   SollIstReport,
   TagStatus,
+  TestDatenZaehler,
+  TestStatus,
   VorschlagResult,
 } from './types'
 
@@ -157,4 +159,33 @@ export function einladungAnnehmen(body: {
   password: string
 }): Promise<{ email: string }> {
   return pb.send('/api/public/einladung/annehmen', { method: 'POST', body })
+}
+
+// ---- QA-/Testmodus --------------------------------------------------------
+// Alle Routen liefern 404, wenn der Server ohne TEST_MODE läuft (Produktion),
+// und sind zusätzlich hinter mitarbeiter-Auth. `pb.send` wirft dann — die
+// Aufrufer (useTestStatus) behandeln das als „kein Testmodus".
+
+export function testStatus(): Promise<TestStatus> {
+  return pb.send('/api/test/status', { method: 'GET' })
+}
+
+export function testSetJetzt(body: {
+  datum?: string // YYYY-MM-DD (Berlin-lokal, tagesgenau)
+  iso?: string // ISO-Datetime (sekundengenau)
+  reset?: boolean // true → zurück auf Echtzeit
+}): Promise<TestStatus> {
+  return pb.send('/api/test/jetzt', { method: 'POST', body })
+}
+
+export function testSeed(): Promise<TestDatenZaehler> {
+  return pb.send('/api/test/seed', { method: 'POST' })
+}
+
+export function testReset(): Promise<TestDatenZaehler> {
+  return pb.send('/api/test/reset', { method: 'POST' })
+}
+
+export function testVerfall(): Promise<{ verfallen: number }> {
+  return pb.send('/api/test/cron/verfall', { method: 'POST' })
 }

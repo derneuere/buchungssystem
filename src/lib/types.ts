@@ -340,3 +340,27 @@ export interface ReferentenAuslastungZeile {
   einsaetze: number
   stunden: number
 }
+
+// ---- QA-/Testmodus (nur aktiv bei TEST_MODE, hinter mitarbeiter-Auth) ------
+
+// GET /api/test/status, POST /api/test/jetzt
+export interface TestStatus {
+  test_mode: boolean
+  jetzt: string // ISO UTC
+  jetzt_berlin: string // "YYYY-MM-DD HH:mm"
+  echt_jetzt: string // ISO UTC
+  offset_sekunden: number
+  aktiv: boolean // offset_sekunden != 0 → simuliertes Datum aktiv
+}
+
+// POST /api/test/seed, POST /api/test/reset
+export interface TestDatenZaehler {
+  bereits_vorhanden?: boolean
+  referenten: number
+  verfuegbarkeiten: number
+  raeume: number
+  themen_zugeordnet?: number
+  themen?: number
+  buchungen: number
+  buchung_referenten: number
+}

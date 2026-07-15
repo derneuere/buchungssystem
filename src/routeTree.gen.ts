@@ -18,6 +18,7 @@ import { Route as AdminAuthenticatedRouteImport } from './routes/admin/_authenti
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin/_authenticated/index'
 import { Route as AdminAuthenticatedVerfuegbarkeitenRouteImport } from './routes/admin/_authenticated/verfuegbarkeiten'
 import { Route as AdminAuthenticatedThemenRouteImport } from './routes/admin/_authenticated/themen'
+import { Route as AdminAuthenticatedTestRouteImport } from './routes/admin/_authenticated/test'
 import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/admin/_authenticated/schliesstage'
 import { Route as AdminAuthenticatedRaeumeRouteImport } from './routes/admin/_authenticated/raeume'
 import { Route as AdminAuthenticatedMitarbeiterRouteImport } from './routes/admin/_authenticated/mitarbeiter'
@@ -80,6 +81,11 @@ const AdminAuthenticatedThemenRoute =
     path: '/themen',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedTestRoute = AdminAuthenticatedTestRouteImport.update({
+  id: '/test',
+  path: '/test',
+  getParentRoute: () => AdminAuthenticatedRoute,
+} as any)
 const AdminAuthenticatedSchliesstageRoute =
   AdminAuthenticatedSchliesstageRouteImport.update({
     id: '/schliesstage',
@@ -180,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
+  '/admin/test': typeof AdminAuthenticatedTestRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
   '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/': typeof AdminAuthenticatedIndexRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
+  '/admin/test': typeof AdminAuthenticatedTestRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
   '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin': typeof AdminAuthenticatedIndexRoute
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/_authenticated/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/_authenticated/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
+  '/admin/_authenticated/test': typeof AdminAuthenticatedTestRoute
   '/admin/_authenticated/themen': typeof AdminAuthenticatedThemenRoute
   '/admin/_authenticated/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/_authenticated/': typeof AdminAuthenticatedIndexRoute
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
+    | '/admin/test'
     | '/admin/themen'
     | '/admin/verfuegbarkeiten'
     | '/admin/'
@@ -281,6 +291,7 @@ export interface FileRouteTypes {
     | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
+    | '/admin/test'
     | '/admin/themen'
     | '/admin/verfuegbarkeiten'
     | '/admin'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/mitarbeiter'
     | '/admin/_authenticated/raeume'
     | '/admin/_authenticated/schliesstage'
+    | '/admin/_authenticated/test'
     | '/admin/_authenticated/themen'
     | '/admin/_authenticated/verfuegbarkeiten'
     | '/admin/_authenticated/'
@@ -388,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/themen'
       fullPath: '/admin/themen'
       preLoaderRoute: typeof AdminAuthenticatedThemenRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/test': {
+      id: '/admin/_authenticated/test'
+      path: '/test'
+      fullPath: '/admin/test'
+      preLoaderRoute: typeof AdminAuthenticatedTestRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/schliesstage': {
@@ -501,6 +520,7 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedMitarbeiterRoute: typeof AdminAuthenticatedMitarbeiterRoute
   AdminAuthenticatedRaeumeRoute: typeof AdminAuthenticatedRaeumeRoute
   AdminAuthenticatedSchliesstageRoute: typeof AdminAuthenticatedSchliesstageRoute
+  AdminAuthenticatedTestRoute: typeof AdminAuthenticatedTestRoute
   AdminAuthenticatedThemenRoute: typeof AdminAuthenticatedThemenRoute
   AdminAuthenticatedVerfuegbarkeitenRoute: typeof AdminAuthenticatedVerfuegbarkeitenRoute
   AdminAuthenticatedIndexRoute: typeof AdminAuthenticatedIndexRoute
@@ -522,6 +542,7 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedMitarbeiterRoute: AdminAuthenticatedMitarbeiterRoute,
   AdminAuthenticatedRaeumeRoute: AdminAuthenticatedRaeumeRoute,
   AdminAuthenticatedSchliesstageRoute: AdminAuthenticatedSchliesstageRoute,
+  AdminAuthenticatedTestRoute: AdminAuthenticatedTestRoute,
   AdminAuthenticatedThemenRoute: AdminAuthenticatedThemenRoute,
   AdminAuthenticatedVerfuegbarkeitenRoute:
     AdminAuthenticatedVerfuegbarkeitenRoute,

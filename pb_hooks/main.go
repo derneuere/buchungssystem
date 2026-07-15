@@ -42,6 +42,7 @@ func main() {
 	registerMitarbeiterRoutes(app)    // routes_mitarbeiter.go — Einladungs-Flow
 	registerMailHooks(app)            // hooks_mail.go — buchungen create-guard
 	registerCron(app)                 // cron.go — Verfall-Job
+	registerTestRoutes(app)           // routes_test.go — QA-/Testmodus (nur bei TEST_MODE)
 	registerStaticServing(app)        // static.go — SPA + CSP (zuletzt)
 
 	if err := app.Start(); err != nil {

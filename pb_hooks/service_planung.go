@@ -8,7 +8,6 @@ package main
 import (
 	"math"
 	"sort"
-	"time"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
@@ -169,7 +168,7 @@ func SchlageReferentenVor(app core.App, buchung *core.Record, ausschluss map[str
 // within +/-30 days of today (SPEC §3.5 fairness metric).
 func referentAuslastung(app core.App, referentID string) (int, error) {
 	loc := berlinLoc()
-	now := time.Now().In(loc)
+	now := jetzt().In(loc)
 	von := now.AddDate(0, 0, -30).UTC().Format("2006-01-02 15:04:05.000Z")
 	bis := now.AddDate(0, 0, 30).UTC().Format("2006-01-02 15:04:05.000Z")
 	var n int

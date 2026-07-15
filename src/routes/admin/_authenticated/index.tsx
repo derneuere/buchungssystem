@@ -9,6 +9,7 @@ import { CalendarClock, ClipboardList, Gauge, Inbox } from 'lucide-react'
 import { pb } from '@/lib/pocketbase'
 import type { Buchung, Einstellungen } from '@/lib/types'
 import { formatDateTime } from '@/lib/admin-format'
+import { useJetzt } from '@/lib/use-test-mode'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -33,7 +34,7 @@ function DashboardPage() {
       }),
   })
 
-  const now = new Date()
+  const now = useJetzt()
   const in7 = addDays(now, 7)
   const naechsteTermineQuery = useQuery({
     queryKey: ['admin', 'dashboard', 'naechste-termine'],

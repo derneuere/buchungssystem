@@ -626,7 +626,7 @@ func zaehleTagesBuchungen(app core.App, datum time.Time) (int, error) {
 // imVorlauffenster checks datum against [heute+min, heute+max] (Berlin-local days).
 func imVorlauffenster(datum time.Time, minTage, maxTage int) bool {
 	loc := berlinLoc()
-	now := time.Now().In(loc)
+	now := jetzt().In(loc)
 	y, mo, d := now.Date()
 	heute := time.Date(y, mo, d, 0, 0, 0, 0, loc)
 	dy, dmo, dd := datum.In(loc).Date()

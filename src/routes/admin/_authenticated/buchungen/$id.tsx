@@ -11,6 +11,7 @@ import { pb } from '@/lib/pocketbase'
 import type { Buchung } from '@/lib/types'
 import { bundeslandLabel, formatDate, formatZeitraum } from '@/lib/admin-format'
 import { getErrorMessage } from '@/lib/admin-errors'
+import { useJetzt } from '@/lib/use-test-mode'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,6 +38,7 @@ function BuchungDetailPage() {
   const queryClient = useQueryClient()
   const buchungKey = ['admin', 'buchung', id]
   const [statusBusy, setStatusBusy] = useState(false)
+  const jetztDate = useJetzt()
 
   const buchungQuery = useQuery({
     queryKey: buchungKey,
@@ -88,7 +90,7 @@ function BuchungDetailPage() {
   const buchung = buchungQuery.data
   const angebotsart = buchung.expand?.angebotsart
   const termin = new Date(buchung.start)
-  const istErfassungSichtbar = new Date() >= termin || buchung.status === 'durchgefuehrt'
+  const istErfassungSichtbar = jetztDate >= termin || buchung.status === 'durchgefuehrt'
 
   return (
     <div className="space-y-6">

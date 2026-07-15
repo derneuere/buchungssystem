@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Code2,
   FilePlus,
+  FlaskConical,
   Landmark,
   LayoutDashboard,
   LineChart,
@@ -27,6 +28,7 @@ import {
 import { pb } from '@/lib/pocketbase'
 import type { Mitarbeiter } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { useTestStatus } from '@/lib/use-test-mode'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
@@ -118,12 +120,14 @@ function SidebarBody({
   loggingOut,
   onLogout,
   onNavigate,
+  systemItems,
 }: {
   pathname: string
   mitarbeiter: Mitarbeiter | null
   loggingOut: boolean
   onLogout: () => void
   onNavigate?: () => void
+  systemItems: NavItem[]
 }) {
   return (
     <div className="flex h-full flex-col">
@@ -141,7 +145,7 @@ function SidebarBody({
       <div className="flex-1 overflow-y-auto py-2">
         <NavGroup label="Übersicht" items={HAUPTNAVIGATION} pathname={pathname} onNavigate={onNavigate} />
         <NavGroup label="Stammdaten" items={STAMMDATEN_NAVIGATION} pathname={pathname} onNavigate={onNavigate} />
-        <NavGroup label="System" items={SYSTEM_NAVIGATION} pathname={pathname} onNavigate={onNavigate} />
+        <NavGroup label="System" items={systemItems} pathname={pathname} onNavigate={onNavigate} />
       </div>
       <div className="border-t p-3">
         <div className="flex items-center justify-between gap-2">
@@ -175,6 +179,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const mitarbeiter = pb.authStore.record as Mitarbeiter | null
 
+  // QA-/Testmodus: Nav-Eintrag nur, wenn der Server mit TEST_MODE läuft; Banner
+  // zusätzlich nur, wenn gerade ein simuliertes Datum aktiv ist. Ohne TEST_MODE
+  // liefert die Status-Route 404 → `test` bleibt undefined → alles unsichtbar.
+  const { data: test } = useTestStatus()
+  const systemNav: NavItem[] = test?.test_mode
+    ? [...SYSTEM_NAVIGATION, { to: '/admin/test', label: 'QA / Testmodus', icon: FlaskConical }]
+    : SYSTEM_NAVIGATION
+
   function handleLogout() {
     setLoggingOut(true)
     pb.authStore.clear()
@@ -190,6 +202,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           mitarbeiter={mitarbeiter}
           loggingOut={loggingOut}
           onLogout={handleLogout}
+          systemItems={systemNav}
         />
       </aside>
 
@@ -214,11 +227,25 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   handleLogout()
                 }}
                 onNavigate={() => setMobileOpen(false)}
+                systemItems={systemNav}
               />
             </SheetContent>
           </Sheet>
           <span className="text-sm font-semibold">Admin-Panel</span>
         </header>
+
+        {/* QA-Banner: nur bei aktiv simuliertem Datum. */}
+        {test?.aktiv && (
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-amber-500 px-4 py-1.5 text-center text-sm font-medium text-amber-950">
+            <span>
+              <FlaskConical className="mr-1 inline h-4 w-4" aria-hidden="true" />
+              Simuliertes Datum aktiv: {test.jetzt_berlin} Uhr
+            </span>
+            <Link to="/admin/test" className="underline underline-offset-2">
+              verwalten
+            </Link>
+          </div>
+        )}
 
         <main className="min-w-0 flex-1 p-4 sm:p-6">{children}</main>
       </div>
