@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 
 import { pb } from '@/lib/pocketbase'
 import type { Buchung } from '@/lib/types'
-import { bundeslandLabel, formatDate, formatZeitraum } from '@/lib/admin-format'
+import { bundeslandLabel, formatDate, formatZeitraum, tagKey } from '@/lib/admin-format'
 import { getErrorMessage } from '@/lib/admin-errors'
 import { useJetzt } from '@/lib/use-test-mode'
 
@@ -89,8 +89,10 @@ function BuchungDetailPage() {
 
   const buchung = buchungQuery.data
   const angebotsart = buchung.expand?.angebotsart
-  const termin = new Date(buchung.start)
-  const istErfassungSichtbar = jetztDate >= termin || buchung.status === 'durchgefuehrt'
+  // Ist-Erfassung ab dem Termin-TAG freischalten (nicht erst ab der Uhrzeit),
+  // damit auch am selben Tag bequem nachbearbeitet werden kann.
+  const istErfassungSichtbar =
+    buchung.status === 'durchgefuehrt' || tagKey(jetztDate) >= tagKey(buchung.start)
 
   return (
     <div className="space-y-6">

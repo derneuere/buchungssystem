@@ -65,6 +65,17 @@ export function formatDauer(minuten?: number | null): string {
   return `${h} Std. ${m} Min.`
 }
 
+/**
+ * Kalendertag-Schlüssel ("yyyy-MM-dd") in Browser-Lokalzeit (≈ Europe/Berlin).
+ * Für tages- statt uhrzeitgenaue Vergleiche (z. B. Ist-Erfassung ab dem
+ * Termintag, nicht erst ab der Termin-Uhrzeit). Lexikografischer Vergleich der
+ * Rückgabe entspricht dem chronologischen.
+ */
+export function tagKey(value: Date | string): string {
+  const d = typeof value === 'string' ? parseISO(value) : value
+  return format(d, 'yyyy-MM-dd')
+}
+
 /** Für `<input type="date">`-Wertebindung: ISO-Datetime -> "yyyy-MM-dd". */
 export function toDateInputValue(iso?: string | null): string {
   if (!iso) return ''

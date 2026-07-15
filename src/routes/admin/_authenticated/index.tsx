@@ -3,12 +3,12 @@
 
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { addDays, endOfWeek, startOfWeek } from 'date-fns'
-import { CalendarClock, ClipboardList, Gauge, Inbox } from 'lucide-react'
+import { addDays, endOfWeek, startOfDay, startOfWeek } from 'date-fns'
+import { CalendarClock, ClipboardCheck, ClipboardList, Gauge, Inbox } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
 import type { Buchung, Einstellungen } from '@/lib/types'
-import { formatDateTime } from '@/lib/admin-format'
+import { formatDateTime, tagKey } from '@/lib/admin-format'
 import { useJetzt } from '@/lib/use-test-mode'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -46,6 +46,20 @@ function DashboardPage() {
       }),
   })
 
+  // Offene Ist-Erfassungen: bestätigte Buchungen, deren Termin-TAG erreicht oder
+  // vorbei ist (Freischaltung ist tagesbasiert), die aber noch nicht als
+  // „durchgeführt" erfasst wurden.
+  const morgenStart = startOfDay(addDays(now, 1))
+  const offeneIstQuery = useQuery({
+    queryKey: ['admin', 'dashboard', 'offene-ist', tagKey(now)],
+    queryFn: () =>
+      pb.collection('buchungen').getList<Buchung>(1, 8, {
+        filter: `status = "bestaetigt" && start < "${morgenStart.toISOString()}"`,
+        sort: 'start',
+        expand: 'angebotsart,thema',
+      }),
+  })
+
   const wochenStart = startOfWeek(now, { weekStartsOn: 1 })
   const wochenEnde = endOfWeek(now, { weekStartsOn: 1 })
   const auslastungQuery = useQuery({
@@ -78,7 +92,7 @@ function DashboardPage() {
         <p className="text-sm text-muted-foreground">Überblick über offene Anfragen und anstehende Termine.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Offene Anfragen</CardTitle>
@@ -123,6 +137,20 @@ function DashboardPage() {
                 ? `${auslastungQuery.data.belegt} von ca. ${auslastungQuery.data.kapazitaet} möglichen Terminslots`
                 : 'wird berechnet …'}
             </CardDescription>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ist-Erfassung offen</CardTitle>
+            <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {offeneIstQuery.isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="text-3xl font-bold">{offeneIstQuery.data?.totalItems ?? 0}</div>
+            )}
+            <CardDescription className="mt-1">Termine ohne Ist-Daten</CardDescription>
           </CardContent>
         </Card>
       </div>
@@ -197,6 +225,54 @@ function DashboardPage() {
                 </Button>
               </div>
             </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Offene Ist-Erfassungen</CardTitle>
+            <CardDescription>Bestätigte Termine ab Termintag ohne erfasste Ist-Daten — bitte nachtragen</CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/buchungen" search={{ status: 'bestaetigt' }}>
+              Alle ansehen
+            </Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {offeneIstQuery.isLoading && (
+            <>
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </>
+          )}
+          {!offeneIstQuery.isLoading && (offeneIstQuery.data?.items.length ?? 0) === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              Alles erfasst — keine offenen Ist-Erfassungen.
+            </p>
+          )}
+          {offeneIstQuery.data?.items.map((buchung) => (
+            <Link
+              key={buchung.id}
+              to="/admin/buchungen/$id"
+              params={{ id: buchung.id }}
+              className="flex flex-col gap-1 rounded-lg border p-3 hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {buchung.expand?.angebotsart?.name ?? '–'} · {buchung.expand?.thema?.name ?? '–'}
+                </p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {buchung.kontakt_name} · {buchung.teilnehmer_geplant} Teiln.
+                </p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                <ClipboardCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                {formatDateTime(buchung.start)}
+              </span>
+            </Link>
           ))}
         </CardContent>
       </Card>
