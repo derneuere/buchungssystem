@@ -56,22 +56,23 @@ function AuswertungenPage() {
   const [gruppierenNach, setGruppierenNach] = useState<HerkunftGruppierung>('bundesland')
   const [auslastungMetrik, setAuslastungMetrik] = useState<AuslastungMetrik>('einsaetze')
 
-  const vonIso = useMemo(() => new Date(`${von}T00:00:00`).toISOString(), [von])
-  const bisIso = useMemo(() => new Date(`${bis}T23:59:59`).toISOString(), [bis])
-
+  // Die Report-Endpoints erwarten das Datum als YYYY-MM-DD (Berlin-lokal,
+  // inklusive) und rechnen selbst nach UTC um (routes_admin_reports.go,
+  // zeitbereichUTC). Ein voller ISO-String würde dort am Parse scheitern (400),
+  // deshalb `von`/`bis` unverändert durchreichen.
   const herkunftQuery = useQuery({
-    queryKey: ['admin', 'reports', 'herkunft', vonIso, bisIso, gruppierenNach],
-    queryFn: () => reportHerkunft({ von: vonIso, bis: bisIso, gruppieren_nach: gruppierenNach }),
+    queryKey: ['admin', 'reports', 'herkunft', von, bis, gruppierenNach],
+    queryFn: () => reportHerkunft({ von, bis, gruppieren_nach: gruppierenNach }),
   })
 
   const sollIstQuery = useQuery({
-    queryKey: ['admin', 'reports', 'soll-ist', vonIso, bisIso],
-    queryFn: () => reportSollIst({ von: vonIso, bis: bisIso }),
+    queryKey: ['admin', 'reports', 'soll-ist', von, bis],
+    queryFn: () => reportSollIst({ von, bis }),
   })
 
   const auslastungQuery = useQuery({
-    queryKey: ['admin', 'reports', 'referenten-auslastung', vonIso, bisIso],
-    queryFn: () => reportReferentenAuslastung({ von: vonIso, bis: bisIso }),
+    queryKey: ['admin', 'reports', 'referenten-auslastung', von, bis],
+    queryFn: () => reportReferentenAuslastung({ von, bis }),
   })
 
   const herkunftDaten = useMemo(
