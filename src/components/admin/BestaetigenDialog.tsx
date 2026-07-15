@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, TriangleAlert, UserPlus } from 'lucide-react'
+import { Loader2, TriangleAlert, UserPlus, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Skeleton } from '@/components/ui/skeleton'
 import { pb } from '@/lib/pocketbase'
 import { adminBestaetigen, adminReferentenKandidaten, type BestaetigenWarnung } from '@/lib/api'
 import { getErrorMessage } from '@/lib/admin-errors'
@@ -26,11 +26,11 @@ import type { Raum, ReferentKandidat } from '@/lib/types'
 
 /**
  * Bestätigen-Aktion mit Kapazitäts-Handling (docs/KAPAZITAET.md §2) UND
- * Referenten-Auswahl bei Unterbesetzung: Der Server blockiert nur einen belegten
- * Raum hart (409). Fehlen Referent:innen/Raum oder gibt es eine Kollision,
- * antwortet er mit 422; dann werden Kandidat:innen samt Auslastungs-Kennzahlen
- * (Einsätze heute/Woche/gesamt, über/unter Schnitt) angezeigt und direkt hier
- * zuweisbar. Danach erneut bestätigen oder – mit Pflicht-Grund – „trotzdem".
+ * Referenten-Auswahl: Beim Öffnen werden Kandidat:innen samt Auslastungs-
+ * Kennzahlen (Einsätze heute/Woche/gesamt, über/unter Schnitt) geladen und als
+ * Karten gezeigt. Fehlt jemand, weist man direkt hier zu (Konflikte sind
+ * ausgegraut). „Bestätigen" prüft jedes Mal serverseitig neu; nur ein belegter
+ * Raum blockiert hart (409), alles andere ist mit Grund überschreibbar.
  */
 export function BestaetigenDialog({
   buchungId,
@@ -60,8 +60,9 @@ export function BestaetigenDialog({
   const kandidatenQuery = useQuery({
     queryKey: ['admin', 'kandidaten', buchungId],
     queryFn: () => adminReferentenKandidaten(buchungId),
-    enabled: open && warnung !== null,
+    enabled: open,
   })
+  const kand = kandidatenQuery.data
 
   function reset() {
     setWarnung(null)
@@ -110,8 +111,13 @@ export function BestaetigenDialog({
         quelle: 'manuell',
       })
       toast.success(`${k.name} zugewiesen.`)
-      queryClient.invalidateQueries({ queryKey: ['admin', 'kandidaten', buchungId] })
+      // Kandidaten (geplant/benoetigt) neu laden + Detailseite aktualisieren.
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'kandidaten', buchungId] })
+      await kandidatenQuery.refetch()
       queryClient.invalidateQueries({ queryKey: ['admin', 'buchung-referenten', buchungId] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'buchung', buchungId] })
+      // Falls eine Warnung offen war: sie bezieht sich auf einen veralteten Stand.
+      setWarnung(null)
     } catch (err) {
       toast.error(getErrorMessage(err, 'Zuweisen fehlgeschlagen.'))
     } finally {
@@ -119,7 +125,10 @@ export function BestaetigenDialog({
     }
   }
 
-  const kand = kandidatenQuery.data
+  const geplant = kand?.geplant ?? 0
+  const benoetigt = kand?.benoetigt ?? 0
+  const vollBesetzt = kand ? geplant >= benoetigt : true
+  const zeigeKandidaten = kandidatenQuery.isLoading || (kand && geplant < benoetigt)
 
   return (
     <Dialog
@@ -135,10 +144,27 @@ export function BestaetigenDialog({
           <DialogTitle>Buchung bestätigen</DialogTitle>
           <DialogDescription>
             {benoetigtRaum
-              ? 'Dieses Angebot benötigt einen Raum. Bitte einen Raum wählen (optional – kann auch später vergeben werden).'
+              ? 'Dieses Angebot benötigt einen Raum. Bitte einen Raum wählen (kann auch später vergeben werden).'
               : 'Die anfragende Person erhält eine Zusage-E-Mail.'}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Besetzungs-Status */}
+        {kand && (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Referent:innen:</span>
+            <Badge
+              variant="outline"
+              className={cn(
+                vollBesetzt
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300',
+              )}
+            >
+              {geplant} von {benoetigt} zugewiesen
+            </Badge>
+          </div>
+        )}
 
         {benoetigtRaum && (
           <div className="space-y-2">
@@ -158,107 +184,53 @@ export function BestaetigenDialog({
           </div>
         )}
 
+        {/* Kandidaten-Karten (bei Unterbesetzung) */}
+        {zeigeKandidaten && (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Referent:in auswählen</p>
+            <div className="grid max-h-72 gap-2 overflow-auto pr-1 sm:grid-cols-2">
+              {kandidatenQuery.isLoading &&
+                Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}
+              {kand?.kandidaten.map((k) => (
+                <KandidatKarte
+                  key={k.id}
+                  k={k}
+                  assigning={assigning === k.id}
+                  disabled={assigning !== null}
+                  onAssign={() => void zuweisen(k)}
+                />
+              ))}
+              {kand && kand.kandidaten.length === 0 && !kandidatenQuery.isLoading && (
+                <p className="col-span-full py-4 text-center text-sm text-muted-foreground">
+                  Keine aktiven Referent:innen angelegt.
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              ⌀ = Durchschnitt aller Referent:innen. „Heute/Woche" bezieht sich auf den Termin dieser Buchung.
+              Konflikte (Terminüberschneidung) sind ausgegraut.
+            </p>
+          </div>
+        )}
+
+        {/* Warnung + Grund (nur nach 422 „Trotzdem bestätigen") */}
         {warnung && (
           <>
             <Alert className="border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
               <TriangleAlert className="h-4 w-4" />
-              <AlertTitle>Hinweis vor dem Bestätigen</AlertTitle>
+              <AlertTitle>Trotz Hinweis bestätigen?</AlertTitle>
               <AlertDescription>
                 <ul className="list-inside list-disc">
                   {warnung.unterbesetzt && (
-                    <li>
-                      Es sind erst {warnung.geplant} von {warnung.benoetigt} benötigten Referent:innen eingeplant –
-                      bitte unten zuweisen.
-                    </li>
+                    <li>Es sind weniger Referent:innen zugewiesen als benötigt.</li>
                   )}
                   {warnung.raum_offen && <li>Es ist noch kein Raum vergeben.</li>}
                   {warnung.kollision && <li>Eine zugeordnete Person hat eine Terminüberschneidung.</li>}
                 </ul>
               </AlertDescription>
             </Alert>
-
-            {(warnung.unterbesetzt || (kand && kand.kandidaten.length > 0)) && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Referent:in auswählen</p>
-                <div className="max-h-64 overflow-auto rounded-md border">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-background">
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Eignung</TableHead>
-                        <TableHead className="text-right" title="Einsätze am Termintag">
-                          Heute
-                        </TableHead>
-                        <TableHead className="text-right" title="Einsätze in der Termin-Woche">
-                          Woche
-                        </TableHead>
-                        <TableHead className="text-right" title="Bereits durchgeführte Einsätze (gesamt)">
-                          Gesamt
-                        </TableHead>
-                        <TableHead>Auslastung</TableHead>
-                        <TableHead className="text-right">Aktion</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {kandidatenQuery.isLoading && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="py-6 text-center text-muted-foreground">
-                            <Loader2 className="mx-auto h-4 w-4 animate-spin" />
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      {kand?.kandidaten.map((k) => (
-                        <TableRow key={k.id}>
-                          <TableCell className="font-medium">{k.name}</TableCell>
-                          <TableCell>
-                            <EignungBadge k={k} />
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{k.einsaetze_tag}</TableCell>
-                          <TableCell className="text-right tabular-nums">{k.einsaetze_woche}</TableCell>
-                          <TableCell className="text-right tabular-nums">{k.einsaetze_gesamt}</TableCell>
-                          <TableCell>
-                            <AuslastungBadge rel={k.auslastung_relativ} />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {k.zugewiesen ? (
-                              <span className="text-xs text-muted-foreground">zugewiesen</span>
-                            ) : (
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                disabled={assigning !== null}
-                                onClick={() => void zuweisen(k)}
-                              >
-                                {assigning === k.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <UserPlus className="h-4 w-4" />
-                                )}
-                                Zuweisen
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {kand && kand.kandidaten.length === 0 && !kandidatenQuery.isLoading && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="py-6 text-center text-sm text-muted-foreground">
-                            Keine aktiven Referent:innen angelegt.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  ⌀ = Durchschnitt aller Referent:innen. „Heute/Woche" bezieht sich auf den Termin dieser Buchung.
-                </p>
-              </div>
-            )}
-
             <div className="space-y-2">
-              <Label htmlFor="bestaetigen-grund">Grund (nur bei „Trotzdem bestätigen")</Label>
+              <Label htmlFor="bestaetigen-grund">Grund (Pflicht)</Label>
               <Textarea
                 id="bestaetigen-grund"
                 rows={2}
@@ -274,40 +246,86 @@ export function BestaetigenDialog({
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
             Abbrechen
           </Button>
-          {!warnung ? (
+          <Button
+            type="button"
+            onClick={() => void attempt(false)}
+            disabled={busy || assigning !== null}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            Bestätigen
+          </Button>
+          {warnung && (
             <Button
               type="button"
-              onClick={() => void attempt(false)}
-              disabled={busy}
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => void attempt(true)}
+              disabled={busy || !grund.trim()}
+              className="bg-amber-600 text-white hover:bg-amber-700"
             >
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              Bestätigen
+              Trotzdem bestätigen
             </Button>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void attempt(false)}
-                disabled={busy || assigning !== null}
-              >
-                {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                Erneut bestätigen
-              </Button>
-              <Button
-                type="button"
-                onClick={() => void attempt(true)}
-                disabled={busy || !grund.trim()}
-                className="bg-amber-600 text-white hover:bg-amber-700"
-              >
-                Trotzdem bestätigen
-              </Button>
-            </>
           )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function KandidatKarte({
+  k,
+  assigning,
+  disabled,
+  onAssign,
+}: {
+  k: ReferentKandidat
+  assigning: boolean
+  disabled: boolean
+  onAssign: () => void
+}) {
+  const konflikt = k.warnstufe === 'hart'
+  return (
+    <div className={cn('flex flex-col gap-2 rounded-lg border p-3', konflikt && 'opacity-50')}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="truncate font-medium">{k.name}</p>
+          <div className="mt-1">
+            <EignungBadge k={k} />
+          </div>
+        </div>
+        <AuslastungBadge rel={k.auslastung_relativ} />
+      </div>
+      <div className="grid grid-cols-3 gap-1 rounded-md bg-muted/50 p-2 text-center">
+        <Stat label="Heute" value={k.einsaetze_tag} />
+        <Stat label="Woche" value={k.einsaetze_woche} />
+        <Stat label="Gesamt" value={k.einsaetze_gesamt} />
+      </div>
+      {k.zugewiesen ? (
+        <div className="flex items-center gap-1 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+          <Check className="h-4 w-4" /> zugewiesen
+        </div>
+      ) : (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={disabled || konflikt}
+          title={konflikt ? 'Terminüberschneidung – hier nicht zuweisbar' : undefined}
+          onClick={onAssign}
+        >
+          {assigning ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+          Zuweisen
+        </Button>
+      )}
+    </div>
+  )
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <div className="text-sm font-semibold tabular-nums">{value}</div>
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+    </div>
   )
 }
 
@@ -317,7 +335,6 @@ function EignungBadge({ k }: { k: ReferentKandidat }) {
       <Badge
         variant="outline"
         className="border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-300"
-        title="Terminüberschneidung mit einer anderen Buchung"
       >
         Konflikt
       </Badge>
@@ -358,7 +375,7 @@ function AuslastungBadge({ rel }: { rel: ReferentKandidat['auslastung_relativ'] 
     schnitt: { label: 'im ⌀', cls: 'text-muted-foreground' },
   }[rel]
   return (
-    <Badge variant="outline" className={cn(map.cls)}>
+    <Badge variant="outline" className={cn('shrink-0', map.cls)}>
       {map.label}
     </Badge>
   )
