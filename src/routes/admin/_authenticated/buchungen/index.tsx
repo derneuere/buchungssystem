@@ -4,7 +4,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
 import type { Angebotsart, AuskunftBuchung, Buchung, BuchungStatus } from '@/lib/types'
@@ -96,9 +96,17 @@ function PersonalBuchungenListe() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Buchungen</h1>
-        <p className="text-sm text-muted-foreground">Alle Anfragen und Buchungen filtern und durchsuchen.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Buchungen</h1>
+          <p className="text-sm text-muted-foreground">Alle Anfragen und Buchungen filtern und durchsuchen.</p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/buchungen/neu">
+            <Plus className="h-4 w-4" />
+            Neue Buchung
+          </Link>
+        </Button>
       </div>
 
       <Card>

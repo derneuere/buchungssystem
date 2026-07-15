@@ -16,7 +16,6 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminEinladungRouteImport } from './routes/admin/einladung'
 import { Route as AdminAuthenticatedRouteImport } from './routes/admin/_authenticated'
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin/_authenticated/index'
-import { Route as AdminAuthenticatedVerfuegbarkeitenRouteImport } from './routes/admin/_authenticated/verfuegbarkeiten'
 import { Route as AdminAuthenticatedThemenRouteImport } from './routes/admin/_authenticated/themen'
 import { Route as AdminAuthenticatedTestRouteImport } from './routes/admin/_authenticated/test'
 import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/admin/_authenticated/schliesstage'
@@ -70,12 +69,6 @@ const AdminAuthenticatedIndexRoute = AdminAuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAuthenticatedRoute,
 } as any)
-const AdminAuthenticatedVerfuegbarkeitenRoute =
-  AdminAuthenticatedVerfuegbarkeitenRouteImport.update({
-    id: '/verfuegbarkeiten',
-    path: '/verfuegbarkeiten',
-    getParentRoute: () => AdminAuthenticatedRoute,
-  } as any)
 const AdminAuthenticatedThemenRoute =
   AdminAuthenticatedThemenRouteImport.update({
     id: '/themen',
@@ -196,7 +189,6 @@ export interface FileRoutesByFullPath {
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/test': typeof AdminAuthenticatedTestRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
-  '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
@@ -222,7 +214,6 @@ export interface FileRoutesByTo {
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/test': typeof AdminAuthenticatedTestRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
-  '/admin/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
@@ -250,7 +241,6 @@ export interface FileRoutesById {
   '/admin/_authenticated/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
   '/admin/_authenticated/test': typeof AdminAuthenticatedTestRoute
   '/admin/_authenticated/themen': typeof AdminAuthenticatedThemenRoute
-  '/admin/_authenticated/verfuegbarkeiten': typeof AdminAuthenticatedVerfuegbarkeitenRoute
   '/admin/_authenticated/': typeof AdminAuthenticatedIndexRoute
   '/admin/_authenticated/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/_authenticated/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
@@ -279,7 +269,6 @@ export interface FileRouteTypes {
     | '/admin/schliesstage'
     | '/admin/test'
     | '/admin/themen'
-    | '/admin/verfuegbarkeiten'
     | '/admin/'
     | '/admin/buchungen/$id'
     | '/admin/buchungen/neu'
@@ -305,7 +294,6 @@ export interface FileRouteTypes {
     | '/admin/schliesstage'
     | '/admin/test'
     | '/admin/themen'
-    | '/admin/verfuegbarkeiten'
     | '/admin'
     | '/admin/buchungen/$id'
     | '/admin/buchungen/neu'
@@ -332,7 +320,6 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/schliesstage'
     | '/admin/_authenticated/test'
     | '/admin/_authenticated/themen'
-    | '/admin/_authenticated/verfuegbarkeiten'
     | '/admin/_authenticated/'
     | '/admin/_authenticated/buchungen/$id'
     | '/admin/_authenticated/buchungen/neu'
@@ -399,13 +386,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminAuthenticatedIndexRouteImport
-      parentRoute: typeof AdminAuthenticatedRoute
-    }
-    '/admin/_authenticated/verfuegbarkeiten': {
-      id: '/admin/_authenticated/verfuegbarkeiten'
-      path: '/verfuegbarkeiten'
-      fullPath: '/admin/verfuegbarkeiten'
-      preLoaderRoute: typeof AdminAuthenticatedVerfuegbarkeitenRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/themen': {
@@ -543,7 +523,6 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedSchliesstageRoute: typeof AdminAuthenticatedSchliesstageRoute
   AdminAuthenticatedTestRoute: typeof AdminAuthenticatedTestRoute
   AdminAuthenticatedThemenRoute: typeof AdminAuthenticatedThemenRoute
-  AdminAuthenticatedVerfuegbarkeitenRoute: typeof AdminAuthenticatedVerfuegbarkeitenRoute
   AdminAuthenticatedIndexRoute: typeof AdminAuthenticatedIndexRoute
   AdminAuthenticatedBuchungenIdRoute: typeof AdminAuthenticatedBuchungenIdRoute
   AdminAuthenticatedBuchungenNeuRoute: typeof AdminAuthenticatedBuchungenNeuRoute
@@ -567,8 +546,6 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedSchliesstageRoute: AdminAuthenticatedSchliesstageRoute,
   AdminAuthenticatedTestRoute: AdminAuthenticatedTestRoute,
   AdminAuthenticatedThemenRoute: AdminAuthenticatedThemenRoute,
-  AdminAuthenticatedVerfuegbarkeitenRoute:
-    AdminAuthenticatedVerfuegbarkeitenRoute,
   AdminAuthenticatedIndexRoute: AdminAuthenticatedIndexRoute,
   AdminAuthenticatedBuchungenIdRoute: AdminAuthenticatedBuchungenIdRoute,
   AdminAuthenticatedBuchungenNeuRoute: AdminAuthenticatedBuchungenNeuRoute,

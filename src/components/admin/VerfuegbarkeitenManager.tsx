@@ -1,7 +1,5 @@
 // Verwaltung der Verfügbarkeits-/Sperrzeiträume EINES Referenten (SPEC §2.3).
-// Wird sowohl im Referenten-Detail (`/admin/referenten/$id`) als auch —
-// referentenübergreifend mit Auswahl — unter `/admin/verfuegbarkeiten`
-// eingebettet.
+// Eingebettet in die Referenten-Detailseite (`/admin/referenten/$id`).
 
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'

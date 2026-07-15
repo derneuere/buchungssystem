@@ -162,7 +162,7 @@ Die Liste ist paginiert – über die Seitennavigation am unteren Rand blättern
 
 Geht eine Anfrage nicht über das öffentliche Formular, sondern telefonisch oder persönlich bei Ihnen ein, erfassen Sie diese selbst:
 
-1. Klicken Sie in der Seitenleiste auf **Buchungen → Neue Buchung** (bzw. rufen Sie `/admin/buchungen/neu` auf).
+1. Klicken Sie in der Buchungsliste oben rechts auf **Neue Buchung** (bzw. rufen Sie `/admin/buchungen/neu` auf).
 2. Füllen Sie die Felder aus:
    - Angebotsart (Führung/Seminar)
    - Thema

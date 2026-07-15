@@ -10,17 +10,14 @@ import {
   BookOpen,
   CalendarClock,
   CalendarDays,
-  CalendarRange,
   ClipboardList,
   Code2,
-  FilePlus,
   FlaskConical,
   Landmark,
   LayoutDashboard,
   LineChart,
   LogOut,
   Menu,
-  Scale,
   Settings,
   Sparkles,
   UserPlus,
@@ -59,13 +56,11 @@ const ROLLE_LABEL: Record<Rolle, string> = {
 const HAUPTNAVIGATION: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true }, // alle drei Rollen
   { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList }, // alle drei Rollen
-  { to: '/admin/buchungen/neu', label: 'Neue Buchung', icon: FilePlus, exact: true, rollen: PERSONAL },
   { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart, rollen: PERSONAL },
 ]
 
 const STAMMDATEN_NAVIGATION: NavItem[] = [
   { to: '/admin/referenten', label: 'Referenten', icon: Users, rollen: PERSONAL },
-  { to: '/admin/verfuegbarkeiten', label: 'Verfügbarkeiten', icon: CalendarRange, rollen: PERSONAL },
   { to: '/admin/themen', label: 'Themen', icon: Sparkles, rollen: PERSONAL },
   { to: '/admin/angebotsarten', label: 'Angebotsarten', icon: CalendarClock, rollen: PERSONAL },
   { to: '/admin/raeume', label: 'Räume', icon: Landmark, rollen: PERSONAL },
@@ -76,7 +71,6 @@ const STAMMDATEN_NAVIGATION: NavItem[] = [
 const SYSTEM_NAVIGATION: NavItem[] = [
   { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus, rollen: NUR_LEITUNG },
   { to: '/admin/einbetten', label: 'Einbetten', icon: Code2, rollen: PERSONAL },
-  { to: '/admin/marktueberblick', label: 'Marktüberblick', icon: Scale, rollen: PERSONAL },
   { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen }, // alle drei Rollen
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings, rollen: PERSONAL },
 ]
