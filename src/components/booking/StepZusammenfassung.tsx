@@ -7,8 +7,9 @@ import { Pencil, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { BUNDESLAENDER } from '@/lib/types'
+import { bundeslandLabel, lokalName } from '@/lib/types'
 import type { Angebotsart, Einrichtungstyp, Thema } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
 import { formatDateLong } from './booking-utils'
 
@@ -33,6 +34,7 @@ function SummarySection({
   onEdit: (step: number) => void
   children: ReactNode
 }) {
+  const { t } = useSprache()
   return (
     <section className="rounded-lg border p-4">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -45,7 +47,7 @@ function SummarySection({
           onClick={() => onEdit(step)}
         >
           <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-          Bearbeiten
+          {t('summary.edit')}
         </Button>
       </div>
       <dl className="space-y-0.5">{children}</dl>
@@ -65,52 +67,60 @@ export function StepZusammenfassung({
   onEdit: (step: number) => void
 }) {
   const { control } = useFormContext<BuchungsFormValues>()
+  const { t, sprache } = useSprache()
   const values = useWatch({ control })
 
   const angebotsart = angebotsarten.find((a) => a.id === values.angebotsart_id)
-  const thema = themen.find((t) => t.id === values.thema_id)
+  const thema = themen.find((th) => th.id === values.thema_id)
   const einrichtungstyp = einrichtungstypen.find((e) => e.id === values.herkunft_einrichtungstyp_id)
-  const bundeslandLabel = BUNDESLAENDER.find((b) => b.value === values.herkunft_bundesland)?.label
+  const bundesland = bundeslandLabel(values.herkunft_bundesland, sprache)
 
   return (
     <div className="space-y-4">
-      <SummarySection title="Angebot" step={1} onEdit={onEdit}>
-        <SummaryRow label="Angebotsart" value={angebotsart?.name} />
-        <SummaryRow label="Thema" value={thema?.name} />
-        <SummaryRow label="Gruppengröße" value={values.gruppengroesse ? `${values.gruppengroesse} Personen` : undefined} />
-      </SummarySection>
-
-      <SummarySection title="Wunschtermin" step={4} onEdit={onEdit}>
-        <SummaryRow label="Datum" value={values.datum ? formatDateLong(values.datum) : undefined} />
+      <SummarySection title={t('summary.secAngebot')} step={1} onEdit={onEdit}>
+        <SummaryRow label={t('summary.angebotsart')} value={lokalName(angebotsart, sprache) || undefined} />
+        <SummaryRow label={t('summary.thema')} value={lokalName(thema, sprache) || undefined} />
         <SummaryRow
-          label="Uhrzeit"
-          value={values.slot_start ? `${values.slot_start}–${values.slot_ende} Uhr` : undefined}
+          label={t('summary.gruppengroesse')}
+          value={values.gruppengroesse ? t('summary.personen', { n: values.gruppengroesse }) : undefined}
         />
       </SummarySection>
 
-      <SummarySection title="Herkunft" step={5} onEdit={onEdit}>
-        <SummaryRow label="Land" value={values.herkunft_land} />
-        <SummaryRow label="Bundesland" value={bundeslandLabel} />
-        <SummaryRow label="Einrichtungstyp" value={einrichtungstyp?.name} />
-        <SummaryRow label="Einrichtung" value={values.herkunft_einrichtungsname} />
-        <SummaryRow label="Ort" value={values.herkunft_ort} />
+      <SummarySection title={t('summary.secWunschtermin')} step={4} onEdit={onEdit}>
+        <SummaryRow
+          label={t('summary.datum')}
+          value={values.datum ? formatDateLong(values.datum, sprache) : undefined}
+        />
+        <SummaryRow
+          label={t('summary.uhrzeit')}
+          value={
+            values.slot_start
+              ? t('summary.slot', { start: values.slot_start, ende: values.slot_ende ?? '' })
+              : undefined
+          }
+        />
       </SummarySection>
 
-      <SummarySection title="Kontakt" step={6} onEdit={onEdit}>
-        <SummaryRow label="Name" value={values.kontakt_name} />
-        <SummaryRow label="E-Mail" value={values.kontakt_email} />
-        <SummaryRow label="Telefon" value={values.kontakt_telefon} />
-        <SummaryRow label="Nachricht" value={values.nachricht} />
+      <SummarySection title={t('summary.secHerkunft')} step={5} onEdit={onEdit}>
+        <SummaryRow label={t('summary.land')} value={values.herkunft_land} />
+        <SummaryRow label={t('summary.bundesland')} value={bundesland || undefined} />
+        <SummaryRow label={t('summary.einrichtungstyp')} value={lokalName(einrichtungstyp, sprache) || undefined} />
+        <SummaryRow label={t('summary.einrichtung')} value={values.herkunft_einrichtungsname} />
+        <SummaryRow label={t('summary.ort')} value={values.herkunft_ort} />
+      </SummarySection>
+
+      <SummarySection title={t('summary.secKontakt')} step={6} onEdit={onEdit}>
+        <SummaryRow label={t('summary.name')} value={values.kontakt_name} />
+        <SummaryRow label={t('summary.email')} value={values.kontakt_email} />
+        <SummaryRow label={t('summary.telefon')} value={values.kontakt_telefon} />
+        <SummaryRow label={t('summary.nachricht')} value={values.nachricht} />
       </SummarySection>
 
       <Separator />
 
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertDescription>
-          Dies ist eine Anfrage. Verbindlich wird die Buchung erst nach Bestätigung durch die
-          Gedenkstätte.
-        </AlertDescription>
+        <AlertDescription>{t('summary.hinweis')}</AlertDescription>
       </Alert>
     </div>
   )

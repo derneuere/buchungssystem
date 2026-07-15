@@ -37,16 +37,47 @@
     }
   }
 
+  // Sichtbare Chrome-Strings des Einbett-Wrappers in beiden Sprachen. Das
+  // Formular im iFrame lädt seine eigene Sprache über ?lang; diese Texte
+  // umgeben es nur (Ladehinweis, iFrame-Titel, Adblock-Fallback-Link).
+  var TEXTS = {
+    de: {
+      loading: 'Formular wird geladen …',
+      title: 'Führung oder Seminar buchen – Gedenkstätte Deutscher Widerstand',
+      fallback: 'Formular in neuem Tab öffnen',
+    },
+    en: {
+      loading: 'Loading form …',
+      title: 'Book a guided tour or seminar – German Resistance Memorial Center',
+      fallback: 'Open the form in a new tab',
+    },
+  }
+
+  function langOf(target) {
+    return target && target.getAttribute('data-lang') === 'en' ? 'en' : 'de'
+  }
+
+  // Baut die /embed-URL, hängt bei englischer Sprache ?lang=en an. Sprache aus
+  // data-lang des Zielelements (Fallback: Standard = Deutsch, kein Param).
+  function embedUrl(origin, target) {
+    var url = origin + '/embed'
+    if (langOf(target) === 'en') url += '?lang=en'
+    return url
+  }
+
   function mount(target, origin) {
     if (!target || target.getAttribute('data-gdw-buchung-mounted') === '1') return
     target.setAttribute('data-gdw-buchung-mounted', '1')
+
+    var texts = TEXTS[langOf(target)]
+    var src = embedUrl(origin, target)
 
     var wrap = document.createElement('div')
     wrap.style.position = 'relative'
     wrap.style.width = '100%'
 
     var loading = document.createElement('div')
-    loading.textContent = 'Formular wird geladen …'
+    loading.textContent = texts.loading
     loading.setAttribute('role', 'status')
     loading.style.padding = '2.5rem 1rem'
     loading.style.textAlign = 'center'
@@ -56,8 +87,8 @@
     wrap.appendChild(loading)
 
     var iframe = document.createElement('iframe')
-    iframe.src = origin + '/embed'
-    iframe.title = 'Führung oder Seminar buchen – Gedenkstätte Deutscher Widerstand'
+    iframe.src = src
+    iframe.title = texts.title
     iframe.style.width = '100%'
     iframe.style.border = '0'
     iframe.style.display = 'none'
@@ -89,10 +120,10 @@
       fallback.style.fontFamily =
         'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
       var link = document.createElement('a')
-      link.href = origin + '/embed'
+      link.href = src
       link.target = '_blank'
       link.rel = 'noopener noreferrer'
-      link.textContent = 'Formular in neuem Tab öffnen'
+      link.textContent = texts.fallback
       fallback.appendChild(link)
       wrap.appendChild(fallback)
     }

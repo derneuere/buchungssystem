@@ -9,10 +9,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { FormField, FormItem, FormMessage } from './form'
 import { cn } from '@/lib/utils'
 import type { Thema } from '@/lib/types'
+import { lokalBeschreibung, lokalName } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
 
 export function StepThema({ themen, isLoading }: { themen: Thema[]; isLoading: boolean }) {
   const { control } = useFormContext<BuchungsFormValues>()
+  const { t, sprache } = useSprache()
 
   if (isLoading) {
     return (
@@ -27,10 +30,7 @@ export function StepThema({ themen, isLoading }: { themen: Thema[]; isLoading: b
   if (themen.length === 0) {
     return (
       <Alert>
-        <AlertDescription>
-          Aktuell sind keine Themen verfügbar. Bitte versuchen Sie es später erneut oder
-          kontaktieren Sie die Gedenkstätte direkt.
-        </AlertDescription>
+        <AlertDescription>{t('stepThema.empty')}</AlertDescription>
       </Alert>
     )
   }
@@ -45,14 +45,15 @@ export function StepThema({ themen, isLoading }: { themen: Thema[]; isLoading: b
             value={field.value}
             onValueChange={field.onChange}
             className="grid gap-3"
-            aria-label="Thema auswählen"
+            aria-label={t('stepThema.ariaLabel')}
           >
-            {themen.map((t) => {
-              const inputId = `thema-${t.id}`
-              const active = field.value === t.id
+            {themen.map((thema) => {
+              const inputId = `thema-${thema.id}`
+              const active = field.value === thema.id
+              const beschreibung = lokalBeschreibung(thema, sprache)
               return (
                 <Label
-                  key={t.id}
+                  key={thema.id}
                   htmlFor={inputId}
                   className={cn(
                     'flex min-h-[44px] cursor-pointer flex-col gap-1 rounded-lg border p-4 transition-colors hover:bg-accent/50',
@@ -60,12 +61,12 @@ export function StepThema({ themen, isLoading }: { themen: Thema[]; isLoading: b
                   )}
                 >
                   <span className="flex items-center gap-2 font-semibold">
-                    <RadioGroupItem value={t.id} id={inputId} />
-                    {t.name}
+                    <RadioGroupItem value={thema.id} id={inputId} />
+                    {lokalName(thema, sprache)}
                   </span>
-                  {t.beschreibung && (
+                  {beschreibung && (
                     <span className="pl-6 text-sm font-normal text-muted-foreground">
-                      {t.beschreibung}
+                      {beschreibung}
                     </span>
                   )}
                 </Label>

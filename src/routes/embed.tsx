@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { BuchungsWizard } from '@/components/booking/BuchungsWizard'
+import { SpracheProvider } from '@/lib/sprache'
 
 export const Route = createFileRoute('/embed')({ component: EmbedPage })
 
@@ -13,6 +14,8 @@ export const Route = createFileRoute('/embed')({ component: EmbedPage })
  * ändert die Höhe von `document.body`).
  */
 function EmbedPage() {
+  const { lang } = Route.useSearch()
+
   useEffect(() => {
     if (typeof window === 'undefined' || window.parent === window) return
 
@@ -35,8 +38,10 @@ function EmbedPage() {
   }, [])
 
   return (
-    <main className="bg-transparent">
-      <BuchungsWizard showChrome={false} />
-    </main>
+    <SpracheProvider sprache={lang ?? 'de'}>
+      <main className="bg-transparent">
+        <BuchungsWizard showChrome={false} />
+      </main>
+    </SpracheProvider>
   )
 }

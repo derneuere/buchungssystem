@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { FormField, FormItem, FormMessage } from './form'
 import { cn } from '@/lib/utils'
 import type { Angebotsart } from '@/lib/types'
+import { lokalBeschreibung, lokalName } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
 
 export function StepAngebotsart({
@@ -20,6 +22,7 @@ export function StepAngebotsart({
   isLoading: boolean
 }) {
   const { control } = useFormContext<BuchungsFormValues>()
+  const { t, sprache } = useSprache()
 
   if (isLoading) {
     return (
@@ -33,10 +36,7 @@ export function StepAngebotsart({
   if (angebotsarten.length === 0) {
     return (
       <Alert>
-        <AlertDescription>
-          Aktuell sind keine Angebotsarten verfügbar. Bitte versuchen Sie es später erneut oder
-          kontaktieren Sie die Gedenkstätte direkt.
-        </AlertDescription>
+        <AlertDescription>{t('stepAngebotsart.empty')}</AlertDescription>
       </Alert>
     )
   }
@@ -51,11 +51,12 @@ export function StepAngebotsart({
             value={field.value}
             onValueChange={field.onChange}
             className="grid gap-3 sm:grid-cols-2"
-            aria-label="Angebotsart auswählen"
+            aria-label={t('stepAngebotsart.ariaLabel')}
           >
             {angebotsarten.map((a) => {
               const inputId = `angebotsart-${a.id}`
               const active = field.value === a.id
+              const beschreibung = lokalBeschreibung(a, sprache)
               return (
                 <Label
                   key={a.id}
@@ -67,22 +68,22 @@ export function StepAngebotsart({
                 >
                   <span className="flex items-center gap-2 font-semibold">
                     <RadioGroupItem value={a.id} id={inputId} />
-                    {a.name}
+                    {lokalName(a, sprache)}
                   </span>
-                  {a.beschreibung && (
+                  {beschreibung && (
                     <span className="pl-6 text-sm font-normal text-muted-foreground">
-                      {a.beschreibung}
+                      {beschreibung}
                     </span>
                   )}
                   <span className="flex flex-wrap items-center gap-3 pl-6 text-xs font-normal text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                      {a.dauer_minuten} Minuten
+                      {t('stepAngebotsart.duration', { dauer_minuten: a.dauer_minuten })}
                     </span>
                     {a.benoetigt_raum && (
                       <span className="inline-flex items-center gap-1">
                         <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                        benötigt Raum
+                        {t('stepAngebotsart.roomRequired')}
                       </span>
                     )}
                   </span>

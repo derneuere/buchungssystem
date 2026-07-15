@@ -1,6 +1,8 @@
 // Typen für PocketBase-Records und Custom-API-Contracts.
 // Bezeichner deutsch, spiegeln docs/SPEC.md §2.3.
 
+import type { Sprache } from './i18n'
+
 export interface BaseRecord {
   id: string
   created: string
@@ -57,25 +59,60 @@ export type Bundesland =
   | 'thueringen'
   | 'ausland_oder_keine_angabe'
 
-export const BUNDESLAENDER: { value: Bundesland; label: string }[] = [
-  { value: 'baden_wuerttemberg', label: 'Baden-Württemberg' },
-  { value: 'bayern', label: 'Bayern' },
-  { value: 'berlin', label: 'Berlin' },
-  { value: 'brandenburg', label: 'Brandenburg' },
-  { value: 'bremen', label: 'Bremen' },
-  { value: 'hamburg', label: 'Hamburg' },
-  { value: 'hessen', label: 'Hessen' },
-  { value: 'mecklenburg_vorpommern', label: 'Mecklenburg-Vorpommern' },
-  { value: 'niedersachsen', label: 'Niedersachsen' },
-  { value: 'nordrhein_westfalen', label: 'Nordrhein-Westfalen' },
-  { value: 'rheinland_pfalz', label: 'Rheinland-Pfalz' },
-  { value: 'saarland', label: 'Saarland' },
-  { value: 'sachsen', label: 'Sachsen' },
-  { value: 'sachsen_anhalt', label: 'Sachsen-Anhalt' },
-  { value: 'schleswig_holstein', label: 'Schleswig-Holstein' },
-  { value: 'thueringen', label: 'Thüringen' },
-  { value: 'ausland_oder_keine_angabe', label: 'Ausland / keine Angabe' },
+export const BUNDESLAENDER: { value: Bundesland; label: string; label_en: string }[] = [
+  { value: 'baden_wuerttemberg', label: 'Baden-Württemberg', label_en: 'Baden-Württemberg' },
+  { value: 'bayern', label: 'Bayern', label_en: 'Bavaria' },
+  { value: 'berlin', label: 'Berlin', label_en: 'Berlin' },
+  { value: 'brandenburg', label: 'Brandenburg', label_en: 'Brandenburg' },
+  { value: 'bremen', label: 'Bremen', label_en: 'Bremen' },
+  { value: 'hamburg', label: 'Hamburg', label_en: 'Hamburg' },
+  { value: 'hessen', label: 'Hessen', label_en: 'Hesse' },
+  {
+    value: 'mecklenburg_vorpommern',
+    label: 'Mecklenburg-Vorpommern',
+    label_en: 'Mecklenburg-Western Pomerania',
+  },
+  { value: 'niedersachsen', label: 'Niedersachsen', label_en: 'Lower Saxony' },
+  { value: 'nordrhein_westfalen', label: 'Nordrhein-Westfalen', label_en: 'North Rhine-Westphalia' },
+  { value: 'rheinland_pfalz', label: 'Rheinland-Pfalz', label_en: 'Rhineland-Palatinate' },
+  { value: 'saarland', label: 'Saarland', label_en: 'Saarland' },
+  { value: 'sachsen', label: 'Sachsen', label_en: 'Saxony' },
+  { value: 'sachsen_anhalt', label: 'Sachsen-Anhalt', label_en: 'Saxony-Anhalt' },
+  { value: 'schleswig_holstein', label: 'Schleswig-Holstein', label_en: 'Schleswig-Holstein' },
+  { value: 'thueringen', label: 'Thüringen', label_en: 'Thuringia' },
+  {
+    value: 'ausland_oder_keine_angabe',
+    label: 'Ausland / keine Angabe',
+    label_en: 'Abroad / no information',
+  },
 ]
+
+/** Bundesland-Label je Sprache (Fallback auf DE). */
+export function bundeslandLabel(value: string | undefined, sprache: Sprache): string {
+  const b = BUNDESLAENDER.find((x) => x.value === value)
+  if (!b) return ''
+  return sprache === 'en' ? b.label_en : b.label
+}
+
+/** Lokalisierter Name mit Fallback auf DE (`name`), falls kein `name_en`. */
+export function lokalName(
+  record: { name: string; name_en?: string } | null | undefined,
+  sprache: Sprache,
+): string {
+  if (!record) return ''
+  return sprache === 'en' && record.name_en?.trim() ? record.name_en : record.name
+}
+
+/** Lokalisierte Beschreibung mit Fallback auf DE (`beschreibung`). */
+export function lokalBeschreibung(
+  record: { beschreibung?: string; beschreibung_en?: string } | null | undefined,
+  sprache: Sprache,
+): string {
+  if (!record) return ''
+  return sprache === 'en' && record.beschreibung_en?.trim()
+    ? record.beschreibung_en
+    : (record.beschreibung ?? '')
+}
 
 export const STATUS_LABEL: Record<BuchungStatus, string> = {
   angefragt: 'Angefragt',
@@ -99,13 +136,16 @@ export interface Mitarbeiter extends BaseRecord {
 
 export interface Thema extends BaseRecord {
   name: string
+  name_en?: string
   beschreibung?: string
+  beschreibung_en?: string
   sort_order?: number
   aktiv: boolean
 }
 
 export interface Einrichtungstyp extends BaseRecord {
   name: string
+  name_en?: string
   sort_order?: number
   aktiv: boolean
 }
@@ -128,8 +168,10 @@ export interface Raum extends BaseRecord {
 
 export interface Angebotsart extends BaseRecord {
   name: string
+  name_en?: string
   slug: string
   beschreibung?: string
+  beschreibung_en?: string
   dauer_minuten: number
   benoetigt_raum: boolean
   min_teilnehmer?: number

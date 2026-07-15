@@ -34,8 +34,10 @@ const ZEITSLOT_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/
 
 type Form = {
   name: string
+  name_en: string
   slug: string
   beschreibung: string
+  beschreibung_en: string
   dauer_minuten: string
   benoetigt_raum: boolean
   min_teilnehmer: string
@@ -51,8 +53,10 @@ type Form = {
 function emptyForm(): Form {
   return {
     name: '',
+    name_en: '',
     slug: '',
     beschreibung: '',
+    beschreibung_en: '',
     dauer_minuten: '60',
     benoetigt_raum: false,
     min_teilnehmer: '',
@@ -90,8 +94,10 @@ function AngebotsartenPage() {
     setEditing(a)
     setForm({
       name: a.name,
+      name_en: a.name_en ?? '',
       slug: a.slug,
       beschreibung: a.beschreibung ?? '',
+      beschreibung_en: a.beschreibung_en ?? '',
       dauer_minuten: String(a.dauer_minuten),
       benoetigt_raum: a.benoetigt_raum,
       min_teilnehmer: a.min_teilnehmer != null ? String(a.min_teilnehmer) : '',
@@ -158,8 +164,10 @@ function AngebotsartenPage() {
     try {
       const body = {
         name: form.name.trim(),
+        name_en: form.name_en.trim(),
         slug: form.slug.trim(),
         beschreibung: form.beschreibung.trim() || undefined,
+        beschreibung_en: form.beschreibung_en.trim(),
         dauer_minuten: dauer,
         benoetigt_raum: form.benoetigt_raum,
         min_teilnehmer: form.min_teilnehmer ? Number(form.min_teilnehmer) : undefined,
@@ -330,12 +338,32 @@ function AngebotsartenPage() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="aa-name-en">Name (Englisch) — optional</Label>
+              <Input
+                id="aa-name-en"
+                value={form.name_en}
+                onChange={(e) => setForm((f) => ({ ...f, name_en: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird in der englischen Buchungsansicht (?lang=en) angezeigt. Leer = deutscher Name.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="aa-beschreibung">Beschreibung</Label>
               <Textarea
                 id="aa-beschreibung"
                 rows={2}
                 value={form.beschreibung}
                 onChange={(e) => setForm((f) => ({ ...f, beschreibung: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="aa-beschreibung-en">Beschreibung (Englisch) — optional</Label>
+              <Textarea
+                id="aa-beschreibung-en"
+                rows={2}
+                value={form.beschreibung_en}
+                onChange={(e) => setForm((f) => ({ ...f, beschreibung_en: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">

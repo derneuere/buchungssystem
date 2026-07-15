@@ -6,10 +6,13 @@ import { useFormContext } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from './form'
 import type { Angebotsart } from '@/lib/types'
+import { lokalName } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
 
 export function StepGruppengroesse({ angebotsart }: { angebotsart?: Angebotsart }) {
   const { control } = useFormContext<BuchungsFormValues>()
+  const { t, sprache } = useSprache()
   const min = angebotsart?.min_teilnehmer && angebotsart.min_teilnehmer > 0 ? angebotsart.min_teilnehmer : 1
   const max = angebotsart?.max_teilnehmer
 
@@ -19,7 +22,7 @@ export function StepGruppengroesse({ angebotsart }: { angebotsart?: Angebotsart 
       name="gruppengroesse"
       render={({ field }) => (
         <FormItem>
-          <FormLabel htmlFor="gruppengroesse">Anzahl Teilnehmende</FormLabel>
+          <FormLabel htmlFor="gruppengroesse">{t('stepGruppe.label')}</FormLabel>
           <FormControl>
             <Input
               id="gruppengroesse"
@@ -35,8 +38,8 @@ export function StepGruppengroesse({ angebotsart }: { angebotsart?: Angebotsart 
           </FormControl>
           <FormDescription>
             {max
-              ? `Zwischen ${min} und ${max} Personen für „${angebotsart?.name}".`
-              : `Mindestens ${min} Personen.`}
+              ? t('stepGruppe.descRange', { min, max, name: lokalName(angebotsart, sprache) })
+              : t('stepGruppe.descMin', { min })}
           </FormDescription>
           <FormMessage />
         </FormItem>

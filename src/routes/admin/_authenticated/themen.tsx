@@ -29,10 +29,17 @@ export const Route = createFileRoute('/admin/_authenticated/themen')({
 
 const QUERY_KEY = ['admin', 'themen']
 
-type ThemaForm = { name: string; beschreibung: string; sort_order: string; aktiv: boolean }
+type ThemaForm = {
+  name: string
+  name_en: string
+  beschreibung: string
+  beschreibung_en: string
+  sort_order: string
+  aktiv: boolean
+}
 
 function emptyForm(): ThemaForm {
-  return { name: '', beschreibung: '', sort_order: '0', aktiv: true }
+  return { name: '', name_en: '', beschreibung: '', beschreibung_en: '', sort_order: '0', aktiv: true }
 }
 
 function ThemenPage() {
@@ -57,7 +64,9 @@ function ThemenPage() {
     setEditing(thema)
     setForm({
       name: thema.name,
+      name_en: thema.name_en ?? '',
       beschreibung: thema.beschreibung ?? '',
+      beschreibung_en: thema.beschreibung_en ?? '',
       sort_order: String(thema.sort_order ?? 0),
       aktiv: thema.aktiv,
     })
@@ -77,7 +86,9 @@ function ThemenPage() {
     try {
       const body = {
         name: form.name.trim(),
+        name_en: form.name_en.trim(),
         beschreibung: form.beschreibung.trim() || undefined,
+        beschreibung_en: form.beschreibung_en.trim(),
         sort_order: Number(form.sort_order) || 0,
         aktiv: form.aktiv,
       }
@@ -208,6 +219,17 @@ function ThemenPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="thema-name-en">Name (Englisch) — optional</Label>
+              <Input
+                id="thema-name-en"
+                value={form.name_en}
+                onChange={(e) => setForm((f) => ({ ...f, name_en: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird in der englischen Buchungsansicht (?lang=en) angezeigt. Leer = deutscher Name.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="thema-beschreibung">Beschreibung</Label>
               <Textarea
                 id="thema-beschreibung"
@@ -216,6 +238,15 @@ function ThemenPage() {
                 onChange={(e) => setForm((f) => ({ ...f, beschreibung: e.target.value }))}
               />
               <p className="text-xs text-muted-foreground">Wird öffentlich im Buchungsformular angezeigt.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="thema-beschreibung-en">Beschreibung (Englisch) — optional</Label>
+              <Textarea
+                id="thema-beschreibung-en"
+                rows={3}
+                value={form.beschreibung_en}
+                onChange={(e) => setForm((f) => ({ ...f, beschreibung_en: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="thema-sort">Reihenfolge</Label>

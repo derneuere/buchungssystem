@@ -50,7 +50,9 @@ function CodeBlock({ code }: { code: string }) {
 function EinbettenPage() {
   const base = origin()
   const loaderSnippet = `<div data-gdw-buchung></div>\n<script src="${base}/embed.js" async></script>`
+  const loaderSnippetEn = `<div data-gdw-buchung data-lang="en"></div>\n<script src="${base}/embed.js" async></script>`
   const iframeSnippet = `<iframe id="gdw-buchung-iframe"\n  src="${base}/embed"\n  title="Führung oder Seminar buchen – Gedenkstätte Deutscher Widerstand"\n  style="width:100%;border:0;min-height:900px;display:block;"\n  loading="lazy"></iframe>\n<script>\n  window.addEventListener("message", function (e) {\n    if (e.origin !== "${base}") return;\n    if (e.data && e.data.type === "gdw-buchung:resize") {\n      var f = document.getElementById("gdw-buchung-iframe");\n      if (f) f.style.height = e.data.height + "px";\n    }\n  });\n</script>`
+  const iframeSnippetEn = `<iframe id="gdw-buchung-iframe"\n  src="${base}/embed?lang=en"\n  title="Book a guided tour or seminar – German Resistance Memorial Center"\n  style="width:100%;border:0;min-height:900px;display:block;"\n  loading="lazy"></iframe>\n<script>\n  window.addEventListener("message", function (e) {\n    if (e.origin !== "${base}") return;\n    if (e.data && e.data.type === "gdw-buchung:resize") {\n      var f = document.getElementById("gdw-buchung-iframe");\n      if (f) f.style.height = e.data.height + "px";\n    }\n  });\n</script>`
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -69,8 +71,18 @@ function EinbettenPage() {
             automatisch an. Änderungen erfolgen serverseitig – das Snippet bleibt gleich.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <CodeBlock code={loaderSnippet} />
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Deutsch (Standard)</p>
+            <CodeBlock code={loaderSnippet} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Englisch (English)</p>
+            <CodeBlock code={loaderSnippetEn} />
+            <p className="text-xs text-muted-foreground">
+              Über <code>data-lang="en"</code> lädt das Formular auf Englisch.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -82,8 +94,18 @@ function EinbettenPage() {
             (Empfänger prüft den Origin).
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <CodeBlock code={iframeSnippet} />
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Deutsch (Standard)</p>
+            <CodeBlock code={iframeSnippet} />
+          </div>
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Englisch (English)</p>
+            <CodeBlock code={iframeSnippetEn} />
+            <p className="text-xs text-muted-foreground">
+              Englische Variante über <code>?lang=en</code> in der iframe-Adresse.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -91,29 +113,49 @@ function EinbettenPage() {
         <CardHeader>
           <CardTitle className="text-base">Vorschau &amp; Ziel-Adressen</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <p>
-            Eingebettetes Formular (chromelos):{' '}
-            <a
-              href={`${base}/embed`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-medium underline"
-            >
-              {base}/embed <ExternalLink className="h-3 w-3" />
-            </a>
-          </p>
-          <p>
-            Eigenständige Seite (zum Teilen/QR):{' '}
-            <a
-              href={`${base}/`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 font-medium underline"
-            >
-              {base}/ <ExternalLink className="h-3 w-3" />
-            </a>
-          </p>
+        <CardContent className="space-y-3 text-sm">
+          <div className="space-y-1">
+            <p className="font-medium">Eingebettetes Formular (chromelos)</p>
+            <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <a
+                href={`${base}/embed`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium underline"
+              >
+                DE: {base}/embed <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href={`${base}/embed?lang=en`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium underline"
+              >
+                EN: {base}/embed?lang=en <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="font-medium">Eigenständige Seite (zum Teilen/QR)</p>
+            <p className="flex flex-wrap gap-x-4 gap-y-1">
+              <a
+                href={`${base}/`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium underline"
+              >
+                DE: {base}/ <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href={`${base}/?lang=en`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 font-medium underline"
+              >
+                EN: {base}/?lang=en <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
         </CardContent>
       </Card>
 

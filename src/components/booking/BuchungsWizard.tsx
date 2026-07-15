@@ -26,12 +26,13 @@ import { Loader2 } from 'lucide-react'
 import { pb } from '@/lib/pocketbase'
 import { submitBuchungsanfrage } from '@/lib/api'
 import type { Angebotsart, Bundesland, Einrichtungstyp, Thema } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import {
   STEP_COUNT,
   STEP_FIELDS,
-  STEP_TITLES,
   buildBuchungsSchema,
   defaultBuchungsFormValues,
+  istDeutschlandLand,
   stepForField,
   type BuchungsFormValues,
 } from '@/lib/booking-schema'
@@ -53,6 +54,9 @@ import { buildStartIso } from './booking-utils'
 export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t, sprache } = useSprache()
+
+  const stepTitle = useCallback((n: number) => t(`stepTitle.${n}`), [t])
 
   const [step, setStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
@@ -90,15 +94,15 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
   // zur Laufzeit unproblematisch, `zodResolver` parst/coerciert ohnehin neu.
   const resolver = useMemo<Resolver<BuchungsFormValues>>(() => {
     const dynamicResolver = async (values: unknown, context: unknown, options: unknown) => {
-      const schema = buildBuchungsSchema(angebotsartRef.current)
+      const schema = buildBuchungsSchema(angebotsartRef.current, t)
       return zodResolver(schema)(values as never, context as never, options as never)
     }
     return dynamicResolver as unknown as Resolver<BuchungsFormValues>
-  }, [])
+  }, [t])
 
   const form = useForm<BuchungsFormValues>({
     resolver,
-    defaultValues: defaultBuchungsFormValues(),
+    defaultValues: defaultBuchungsFormValues(sprache),
     mode: 'onBlur',
   })
 
@@ -141,7 +145,7 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
     setSubmitting(true)
     try {
       const start = buildStartIso(values.datum, values.slot_start)
-      const istDeutschland = values.herkunft_land.trim().toLowerCase() === 'deutschland'
+      const istDeutschland = istDeutschlandLand(values.herkunft_land)
 
       const res = await submitBuchungsanfrage({
         angebotsart_id: values.angebotsart_id,
@@ -164,7 +168,10 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
         formular_geladen_ts: values.formular_geladen_ts,
       })
 
-      navigate({ to: '/buchung/danke', search: { id: res.id } })
+      navigate({
+        to: '/buchung/danke',
+        search: { id: res.id, lang: sprache === 'en' ? 'en' : undefined },
+      })
     } catch (err) {
       handleSubmitError(err)
     } finally {
@@ -175,11 +182,11 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
   function handleSubmitError(err: unknown) {
     if (err instanceof ClientResponseError) {
       if (err.status === 429) {
-        toast.error('Zu viele Anfragen, bitte später erneut versuchen.')
+        toast.error(t('wizard.toast.rate'))
         return
       }
       if (err.status === 409) {
-        toast.error('Der Termin ist leider gerade vergeben worden.')
+        toast.error(t('wizard.toast.conflict'))
         queryClient.invalidateQueries({ queryKey: ['public', 'verfuegbarkeit'] })
         setValue('slot_start', '', { shouldValidate: false })
         setValue('slot_ende', '', { shouldValidate: false })
@@ -187,7 +194,7 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
         return
       }
     }
-    toast.error('Ihre Anfrage konnte leider nicht gesendet werden. Bitte versuchen Sie es erneut.')
+    toast.error(t('wizard.toast.error'))
   }
 
   function onInvalid(errors: FieldErrors<BuchungsFormValues>) {
@@ -195,7 +202,7 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
     if (!firstField) return
     const target = stepForField(firstField)
     if (target !== step) {
-      toast.error(`Bitte prüfen Sie Ihre Angaben in Schritt ${target}: ${STEP_TITLES[target - 1]}.`)
+      toast.error(t('wizard.toast.validation', { target, titel: stepTitle(target) }))
       setStep(target)
     }
   }
@@ -205,10 +212,10 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
   return (
     <div className={cn('mx-auto w-full max-w-2xl', showChrome ? 'px-4 py-8 sm:py-12' : 'px-3 py-4')}>
       <div aria-live="polite" className="sr-only">
-        Schritt {step} von {STEP_COUNT}: {STEP_TITLES[step - 1]}
+        {t('wizard.stepStatus', { step, count: STEP_COUNT, titel: stepTitle(step) })}
       </div>
 
-      <StepIndicator step={step} total={STEP_COUNT} titles={STEP_TITLES} />
+      <StepIndicator step={step} total={STEP_COUNT} titel={stepTitle(step)} />
 
       <Form {...form}>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate className="pb-24 sm:pb-0">
@@ -223,7 +230,7 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
               overflow: 'hidden',
             }}
           >
-            <label htmlFor="firma_website">Firma / Website (bitte freilassen)</label>
+            <label htmlFor="firma_website">{t('wizard.honeypot')}</label>
             <input
               id="firma_website"
               type="text"
@@ -239,7 +246,7 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
               tabIndex={-1}
               className="mb-4 text-xl font-semibold tracking-tight outline-none sm:text-2xl"
             >
-              {step}. {STEP_TITLES[step - 1]}
+              {t('wizard.stepHeading', { step, titel: stepTitle(step) })}
             </h2>
 
             {step === 1 && (
@@ -284,22 +291,22 @@ export function BuchungsWizard({ showChrome }: { showChrome: boolean }) {
               disabled={step === 1 || submitting}
               className="min-h-11"
             >
-              Zurück
+              {t('wizard.back')}
             </Button>
             {isLastStep ? (
               <Button type="submit" disabled={submitting} className="min-h-11 min-w-40">
                 {submitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    Wird gesendet …
+                    {t('wizard.sending')}
                   </>
                 ) : (
-                  'Anfrage verbindlich absenden'
+                  t('wizard.submit')
                 )}
               </Button>
             ) : (
               <Button type="button" onClick={handleNext} className="min-h-11">
-                Weiter
+                {t('wizard.next')}
               </Button>
             )}
           </div>

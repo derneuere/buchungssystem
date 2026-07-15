@@ -3,7 +3,8 @@
 // ISO-Datetime für `BuchungsanfrageInput.start`.
 
 import { format, parse } from 'date-fns'
-import { de } from 'date-fns/locale'
+import { de, enUS } from 'date-fns/locale'
+import type { Sprache } from '@/lib/i18n'
 
 export const DATE_KEY_FORMAT = 'yyyy-MM-dd'
 export const MONTH_KEY_FORMAT = 'yyyy-MM'
@@ -20,10 +21,12 @@ export function parseDateKey(key: string): Date {
   return parse(key, DATE_KEY_FORMAT, new Date())
 }
 
-export function formatDateLong(key: string): string {
+export function formatDateLong(key: string, sprache: Sprache = 'de'): string {
   if (!key) return ''
+  const locale = sprache === 'en' ? enUS : de
+  const pattern = sprache === 'en' ? 'EEEE, MMMM d, yyyy' : 'EEEE, d. MMMM yyyy'
   try {
-    return format(parseDateKey(key), 'EEEE, d. MMMM yyyy', { locale: de })
+    return format(parseDateKey(key), pattern, { locale })
   } catch {
     return key
   }

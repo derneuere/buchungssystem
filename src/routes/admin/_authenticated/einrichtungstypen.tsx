@@ -28,9 +28,9 @@ export const Route = createFileRoute('/admin/_authenticated/einrichtungstypen')(
 
 const QUERY_KEY = ['admin', 'einrichtungstypen']
 
-type Form = { name: string; sort_order: string; aktiv: boolean }
+type Form = { name: string; name_en: string; sort_order: string; aktiv: boolean }
 function emptyForm(): Form {
-  return { name: '', sort_order: '0', aktiv: true }
+  return { name: '', name_en: '', sort_order: '0', aktiv: true }
 }
 
 function EinrichtungstypenPage() {
@@ -53,7 +53,12 @@ function EinrichtungstypenPage() {
 
   function openEdit(item: Einrichtungstyp) {
     setEditing(item)
-    setForm({ name: item.name, sort_order: String(item.sort_order ?? 0), aktiv: item.aktiv })
+    setForm({
+      name: item.name,
+      name_en: item.name_en ?? '',
+      sort_order: String(item.sort_order ?? 0),
+      aktiv: item.aktiv,
+    })
     setDialogOpen(true)
   }
 
@@ -68,7 +73,12 @@ function EinrichtungstypenPage() {
     }
     setSaving(true)
     try {
-      const body = { name: form.name.trim(), sort_order: Number(form.sort_order) || 0, aktiv: form.aktiv }
+      const body = {
+        name: form.name.trim(),
+        name_en: form.name_en.trim(),
+        sort_order: Number(form.sort_order) || 0,
+        aktiv: form.aktiv,
+      }
       if (editing) {
         await pb.collection('einrichtungstypen').update(editing.id, body)
         toast.success('Einrichtungstyp aktualisiert.')
@@ -186,6 +196,17 @@ function EinrichtungstypenPage() {
             <div className="space-y-2">
               <Label htmlFor="et-name">Name *</Label>
               <Input id="et-name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="et-name-en">Name (Englisch) — optional</Label>
+              <Input
+                id="et-name-en"
+                value={form.name_en}
+                onChange={(e) => setForm((f) => ({ ...f, name_en: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">
+                Wird in der englischen Buchungsansicht (?lang=en) angezeigt. Leer = deutscher Name.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="et-sort">Reihenfolge</Label>

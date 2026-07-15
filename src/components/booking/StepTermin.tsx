@@ -6,7 +6,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { startOfMonth, startOfToday } from 'date-fns'
-import { de } from 'date-fns/locale'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -16,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FormField, FormItem, FormMessage } from './form'
 import { getVerfuegbarkeitSlots, getVerfuegbarkeitTage } from '@/lib/api'
 import type { Angebotsart } from '@/lib/types'
+import { useSprache } from '@/lib/sprache'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
 import { cn } from '@/lib/utils'
 import { formatDateLong, parseDateKey, toDateKey, toMonthKey } from './booking-utils'
@@ -30,6 +30,7 @@ export function StepTermin({
   gruppengroesse?: number | string
 }) {
   const { control, setValue, getValues } = useFormContext<BuchungsFormValues>()
+  const { t, sprache, locale } = useSprache()
   const datum = useWatch({ control, name: 'datum' })
   const slotStart = useWatch({ control, name: 'slot_start' })
 
@@ -105,9 +106,7 @@ export function StepTermin({
   if (!hasBasics) {
     return (
       <Alert>
-        <AlertDescription>
-          Bitte wählen Sie zunächst Angebotsart, Thema und Gruppengröße aus.
-        </AlertDescription>
+        <AlertDescription>{t('stepTermin.prereq')}</AlertDescription>
       </Alert>
     )
   }
@@ -115,17 +114,17 @@ export function StepTermin({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-2 text-sm font-medium">Datum</h3>
+        <h3 className="mb-2 text-sm font-medium">{t('stepTermin.dateHeading')}</h3>
         <div className="relative rounded-lg border p-2 sm:p-3">
           {tageQuery.isFetching && (
             <div className="absolute right-3 top-3 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              <span className="sr-only">Verfügbarkeit wird geladen …</span>
+              <span className="sr-only">{t('stepTermin.loading')}</span>
             </div>
           )}
           <Calendar
             mode="single"
-            locale={de}
+            locale={locale}
             month={month}
             onMonthChange={setMonth}
             selected={selectedDate}
@@ -145,23 +144,22 @@ export function StepTermin({
             className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
             aria-hidden="true"
           />
-          Tage mit Punkt: nur noch wenige Termine frei
+          {t('stepTermin.legend')}
         </p>
         {!tageQuery.isLoading && !tageQuery.isFetching && !hatOffeneTage && (
           <Alert variant="destructive" className="mt-3">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Keine Termine frei</AlertTitle>
-            <AlertDescription>
-              Für diesen Zeitraum sind aktuell keine Termine frei – bitte anderen Monat wählen oder
-              die Gedenkstätte kontaktieren.
-            </AlertDescription>
+            <AlertTitle>{t('stepTermin.noneTitle')}</AlertTitle>
+            <AlertDescription>{t('stepTermin.noneDesc')}</AlertDescription>
           </Alert>
         )}
       </div>
 
       {datum && (
         <div>
-          <h3 className="mb-2 text-sm font-medium">Uhrzeit am {formatDateLong(datum)}</h3>
+          <h3 className="mb-2 text-sm font-medium">
+            {t('stepTermin.timeHeading', { datum: formatDateLong(datum, sprache) })}
+          </h3>
           {slotsQuery.isLoading ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <Skeleton className="h-11 w-full" />
@@ -170,9 +168,7 @@ export function StepTermin({
             </div>
           ) : (slotsQuery.data?.slots.length ?? 0) === 0 ? (
             <Alert>
-              <AlertDescription>
-                An diesem Tag sind keine Zeitfenster verfügbar. Bitte wählen Sie einen anderen Tag.
-              </AlertDescription>
+              <AlertDescription>{t('stepTermin.noSlots')}</AlertDescription>
             </Alert>
           ) : (
             <FormField
@@ -188,7 +184,7 @@ export function StepTermin({
                       setValue('slot_ende', slot?.ende ?? '', { shouldValidate: true })
                     }}
                     className="grid grid-cols-2 gap-2 sm:grid-cols-3"
-                    aria-label="Uhrzeit auswählen"
+                    aria-label={t('stepTermin.slotAriaLabel')}
                   >
                     {slotsQuery.data?.slots.map((slot) => {
                       const inputId = `slot-${slot.start}`
@@ -204,7 +200,7 @@ export function StepTermin({
                           )}
                         >
                           <RadioGroupItem value={slot.start} id={inputId} disabled={!slot.buchbar} />
-                          {slot.start}–{slot.ende} Uhr
+                          {t('stepTermin.slot', { start: slot.start, ende: slot.ende })}
                         </Label>
                       )
                     })}

@@ -13,12 +13,15 @@ import {
   FormMessage,
 } from './form'
 import type { BuchungsFormValues } from '@/lib/booking-schema'
+import { useSprache } from '@/lib/sprache'
 
 const NACHRICHT_MAX = 1000
 
 export function StepKontakt() {
   const { control } = useFormContext<BuchungsFormValues>()
+  const { t } = useSprache()
   const nachricht = useWatch({ control, name: 'nachricht' })
+  const datenschutzParts = t('stepKontakt.datenschutzLabel').split('{link}')
 
   return (
     <div className="space-y-5">
@@ -27,7 +30,7 @@ export function StepKontakt() {
         name="kontakt_name"
         render={({ field }) => (
           <FormItem>
-            <FormLabel htmlFor="kontakt_name">Name</FormLabel>
+            <FormLabel htmlFor="kontakt_name">{t('stepKontakt.name')}</FormLabel>
             <FormControl>
               <Input id="kontakt_name" className="h-11" autoComplete="name" {...field} />
             </FormControl>
@@ -42,7 +45,7 @@ export function StepKontakt() {
           name="kontakt_email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="kontakt_email">E-Mail</FormLabel>
+              <FormLabel htmlFor="kontakt_email">{t('stepKontakt.email')}</FormLabel>
               <FormControl>
                 <Input
                   id="kontakt_email"
@@ -63,7 +66,8 @@ export function StepKontakt() {
           render={({ field }) => (
             <FormItem>
               <FormLabel htmlFor="kontakt_telefon">
-                Telefon <span className="font-normal text-muted-foreground">(optional)</span>
+                {t('stepKontakt.telefon')}{' '}
+                <span className="font-normal text-muted-foreground">{t('common.optional')}</span>
               </FormLabel>
               <FormControl>
                 <Input
@@ -86,12 +90,15 @@ export function StepKontakt() {
         render={({ field }) => (
           <FormItem>
             <FormLabel htmlFor="nachricht">
-              Anmerkungen <span className="font-normal text-muted-foreground">(optional)</span>
+              {t('stepKontakt.anmerkungen')}{' '}
+              <span className="font-normal text-muted-foreground">{t('common.optional')}</span>
             </FormLabel>
             <FormControl>
               <Textarea id="nachricht" rows={4} maxLength={NACHRICHT_MAX} {...field} />
             </FormControl>
-            <FormDescription>{(nachricht ?? '').length}/{NACHRICHT_MAX} Zeichen</FormDescription>
+            <FormDescription>
+              {t('stepKontakt.charCount', { n: (nachricht ?? '').length, max: NACHRICHT_MAX })}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -112,17 +119,16 @@ export function StepKontakt() {
                 />
               </FormControl>
               <FormLabel htmlFor="datenschutz_zugestimmt" className="cursor-pointer text-sm font-normal leading-relaxed">
-                Ich habe die{' '}
+                {datenschutzParts[0]}
                 <a
                   href="/datenschutz"
                   target="_blank"
                   rel="noreferrer"
                   className="underline underline-offset-2 hover:text-foreground"
                 >
-                  Datenschutzerklärung
-                </a>{' '}
-                zur Kenntnis genommen und bin mit der Verarbeitung meiner Daten zur Bearbeitung
-                dieser Anfrage einverstanden.
+                  {t('stepKontakt.datenschutzLink')}
+                </a>
+                {datenschutzParts[1] ?? ''}
               </FormLabel>
             </div>
             <FormMessage />

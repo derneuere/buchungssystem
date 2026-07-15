@@ -67,6 +67,26 @@ exakt auf die Inhaltshöhe mit (kein Innen-Scrollen, kein fester Wert).
 
 ---
 
+## Sprache: Deutsch oder Englisch
+
+Das öffentliche Formular ist zweisprachig. Standard ist **Deutsch**; für die englische Seite der
+Gedenkstätte (`/en/`) lässt sich **Englisch pro Einbettung** wählen — dann bekommt die englische
+Webseite ihren eigenen Einbett-Schnipsel:
+
+- **Loader (Option B/C):** am Container `data-lang="en"` ergänzen:
+  ```html
+  <div data-gdw-buchung data-lang="en"></div>
+  <script src="https://buchung.niaz.omg.lol/embed.js" async></script>
+  ```
+- **iframe (Option A):** `?lang=en` an die iframe-URL anhängen (z. B. `…/embed?lang=en`).
+
+Ohne Angabe bleibt alles Deutsch (keine Änderung für bestehende Einbettungen). Fertige Snippets
+für **beide** Sprachen stehen im Admin-Panel unter **Einbetten** zum Kopieren bereit. Themen- und
+Angebotsnamen erscheinen englisch, sobald im Admin ein englischer Name hinterlegt wurde — sonst
+greift der deutsche Fallback.
+
+---
+
 ## Option C — Am integriertesten: eigenes TYPO3-Content-Element (Fluid)
 
 Wer es „first class" in TYPO3 haben will (Redakteure wählen ein Element „Buchung" im
