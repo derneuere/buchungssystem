@@ -20,6 +20,7 @@ import {
   LineChart,
   LogOut,
   Menu,
+  Scale,
   Settings,
   Sparkles,
   UserPlus,
@@ -75,6 +76,7 @@ const STAMMDATEN_NAVIGATION: NavItem[] = [
 const SYSTEM_NAVIGATION: NavItem[] = [
   { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus, rollen: NUR_LEITUNG },
   { to: '/admin/einbetten', label: 'Einbetten', icon: Code2, rollen: PERSONAL },
+  { to: '/admin/marktueberblick', label: 'Marktüberblick', icon: Scale, rollen: PERSONAL },
   { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen }, // alle drei Rollen
   { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings, rollen: PERSONAL },
 ]
