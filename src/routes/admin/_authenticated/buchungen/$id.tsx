@@ -180,7 +180,7 @@ function BuchungDetailPage() {
         </Alert>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Buchungsdaten</CardTitle>
@@ -242,18 +242,17 @@ function BuchungDetailPage() {
           </CardContent>
         </Card>
 
-        <NotizenCard buchung={buchung} onSaved={invalidateAlles} />
+        <BuchungReferentenPlanung buchung={buchung} />
       </div>
 
-      <BuchungReferentenPlanung buchung={buchung} />
+      <BuchungIstErfassung
+        buchung={buchung}
+        onChanged={invalidateAlles}
+        gesperrt={!istErfassungSichtbar}
+        terminDatum={formatDate(buchung.start)}
+      />
 
-      {istErfassungSichtbar && <BuchungIstErfassung buchung={buchung} onChanged={invalidateAlles} />}
-
-      {!istErfassungSichtbar && (
-        <p className="text-sm text-muted-foreground">
-          Die Ist-Erfassung wird ab dem Termindatum ({formatDate(buchung.start)}) freigeschaltet.
-        </p>
-      )}
+      <NotizenCard buchung={buchung} onSaved={invalidateAlles} />
     </div>
   )
 }

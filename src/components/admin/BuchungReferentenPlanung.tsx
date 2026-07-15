@@ -1,5 +1,8 @@
-// Abschnitt (b) der Buchungsdetailseite (SPEC §5.3): automatischer Vorschlag,
-// editierbare Soll-Liste, Live-Konfliktcheck beim Hinzufügen, Bedarfs-Badge.
+// Abschnitt (b) der Buchungsdetailseite (SPEC §5.3): EINE Karte für die
+// Referent:innen-Planung — Soll-Liste + manuelles Hinzufügen (Live-Konfliktcheck)
+// und der automatische Vorschlag als kompakte Aktion oben rechts. Das
+// Vorschlags-Ergebnis erscheint nur auf Klick, damit es bei bereits erfolgter
+// Zuweisung nicht im Weg steht.
 
 import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -98,6 +101,7 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
         })
       }
       toast.success(`${neue.length} Referent:in(nen) übernommen.`)
+      setVorschlagResult(null)
       invalidateZuordnungen()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Übernehmen fehlgeschlagen.'))
@@ -176,36 +180,103 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
   const bedarfErfuellt = sollListe.length >= benoetigt
 
   return (
-    <div className="space-y-4">
+    <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4" />
-            Automatischer Vorschlag
-          </CardTitle>
-          <CardDescription>
-            Berechnet freie, thematisch passende Referent:innen anhand Verfügbarkeit, Auslastung und Kollisionen.
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-base">Referent:innen-Planung</CardTitle>
+            <CardDescription>Soll-Planung dieser Buchung</CardDescription>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                bedarfErfuellt
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                  : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300',
+              )}
+            >
+              {sollListe.length} von {benoetigt}
+            </Badge>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleVorschlag}
+              disabled={vorschlagLoading}
+              title="Freie, thematisch passende Referent:innen anhand Verfügbarkeit, Auslastung und Kollisionen berechnen"
+            >
+              {vorschlagLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+              )}
+              Vorschlag
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={handleVorschlag} disabled={vorschlagLoading}>
-              {vorschlagLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              Vorschlag berechnen
-            </Button>
-            {vorschlagResult && (
-              <Button type="button" size="sm" onClick={handleUebernehmen} disabled={uebernehmenLoading}>
-                {uebernehmenLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                Übernehmen
-              </Button>
-            )}
-          </div>
+          {zuordnungenQuery.isLoading && <Skeleton className="h-10 w-full" />}
+          {!zuordnungenQuery.isLoading && sollListe.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Noch keine Referent:innen zugewiesen. Nutze den Vorschlag oben rechts oder füge unten manuell hinzu.
+            </p>
+          )}
+          <ul className="space-y-2">
+            {sollListe.map((z) => (
+              <li key={z.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="truncate font-medium">{z.expand?.referent?.name ?? 'Unbekannt'}</span>
+                  <Badge variant="outline" className="shrink-0 text-xs">
+                    {QUELLE_LABEL[z.quelle] ?? z.quelle}
+                  </Badge>
+                  {z.eingesetzt && (
+                    <Badge variant="secondary" className="shrink-0 text-xs">
+                      eingesetzt
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemove(z.id)}
+                  disabled={removingId === z.id}
+                  aria-label={`${z.expand?.referent?.name ?? 'Referent'} entfernen`}
+                >
+                  {removingId === z.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                </Button>
+              </li>
+            ))}
+          </ul>
 
+          {/* Ergebnis des automatischen Vorschlags — nur nach Klick sichtbar. */}
           {vorschlagResult && (
             <div className="space-y-3 rounded-lg border p-3">
-              <p className="text-sm">
-                Benötigt: <span className="font-medium">{vorschlagResult.benoetigt}</span>
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm">
+                  Vorschlag · benötigt: <span className="font-medium">{vorschlagResult.benoetigt}</span>
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button type="button" size="sm" onClick={handleUebernehmen} disabled={uebernehmenLoading}>
+                    {uebernehmenLoading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                    Übernehmen
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setVorschlagResult(null)}
+                    aria-label="Vorschlag verwerfen"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
               <div>
                 <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Vorschlag</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -256,62 +327,6 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Zugewiesene Referent:innen</CardTitle>
-            <CardDescription>Soll-Planung dieser Buchung</CardDescription>
-          </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              bedarfErfuellt
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                : 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300',
-            )}
-          >
-            {sollListe.length} von {benoetigt}
-          </Badge>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {zuordnungenQuery.isLoading && <Skeleton className="h-10 w-full" />}
-          {!zuordnungenQuery.isLoading && sollListe.length === 0 && (
-            <p className="text-sm text-muted-foreground">Noch keine Referent:innen zugewiesen.</p>
-          )}
-          <ul className="space-y-2">
-            {sollListe.map((z) => (
-              <li key={z.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
-                <div className="flex min-w-0 items-center gap-2">
-                  <span className="truncate font-medium">{z.expand?.referent?.name ?? 'Unbekannt'}</span>
-                  <Badge variant="outline" className="shrink-0 text-xs">
-                    {QUELLE_LABEL[z.quelle] ?? z.quelle}
-                  </Badge>
-                  {z.eingesetzt && (
-                    <Badge variant="secondary" className="shrink-0 text-xs">
-                      eingesetzt
-                    </Badge>
-                  )}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemove(z.id)}
-                  disabled={removingId === z.id}
-                  aria-label={`${z.expand?.referent?.name ?? 'Referent'} entfernen`}
-                >
-                  {removingId === z.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
-                </Button>
-              </li>
-            ))}
-          </ul>
 
           <Popover open={comboOpen} onOpenChange={setComboOpen}>
             <PopoverTrigger asChild>
@@ -383,6 +398,6 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }

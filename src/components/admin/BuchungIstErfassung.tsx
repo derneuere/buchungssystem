@@ -19,13 +19,21 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { cn } from '@/lib/utils'
+import { Lock } from 'lucide-react'
 
 export function BuchungIstErfassung({
   buchung,
   onChanged,
+  gesperrt = false,
+  terminDatum,
 }: {
   buchung: Buchung
   onChanged: () => void
+  /** Vor dem Termin: Karte sichtbar, aber ausgegraut und deaktiviert. */
+  gesperrt?: boolean
+  /** Anzeige-Datum für den Freischalt-Hinweis (nur bei gesperrt). */
+  terminDatum?: string
 }) {
   const queryClient = useQueryClient()
   const zuordnungenKey = ['admin', 'buchung-referenten', buchung.id]
@@ -132,14 +140,35 @@ export function BuchungIstErfassung({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Ist-Erfassung</CardTitle>
-        <CardDescription>
-          Wer war tatsächlich im Einsatz? Wie viele Personen sind erschienen? Ab Termindatum ausfüllbar.
-        </CardDescription>
+    <Card className={cn(gesperrt && 'border-dashed')}>
+      <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <div>
+          <CardTitle className="text-base">Ist-Erfassung</CardTitle>
+          <CardDescription>
+            Wer war tatsächlich im Einsatz? Wie viele Personen sind erschienen? Ab Termindatum ausfüllbar.
+          </CardDescription>
+        </div>
+        {gesperrt && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-xs text-muted-foreground">
+            <Lock className="h-3.5 w-3.5" aria-hidden="true" />
+            Gesperrt
+          </span>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
+        {gesperrt && (
+          <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
+            <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>
+              Die Ist-Erfassung wird ab dem Termindatum{terminDatum ? ` (${terminDatum})` : ''} freigeschaltet.
+              Sie ist hier bereits sichtbar, aber noch nicht ausfüllbar.
+            </span>
+          </div>
+        )}
+        <fieldset
+          disabled={gesperrt}
+          className={cn('m-0 min-w-0 space-y-4 border-0 p-0', gesperrt && 'pointer-events-none opacity-60')}
+        >
         {zuordnungenQuery.isLoading && <Skeleton className="h-10 w-full" />}
         {!zuordnungenQuery.isLoading && zuordnungen.length === 0 && (
           <p className="text-sm text-muted-foreground">Keine Referent:innen zugewiesen.</p>
@@ -228,6 +257,7 @@ export function BuchungIstErfassung({
             </>
           )}
         </div>
+        </fieldset>
       </CardContent>
     </Card>
   )
