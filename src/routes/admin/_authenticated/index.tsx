@@ -10,6 +10,8 @@ import { pb } from '@/lib/pocketbase'
 import type { Buchung, Einstellungen } from '@/lib/types'
 import { formatDateTime, tagKey } from '@/lib/admin-format'
 import { useJetzt } from '@/lib/use-test-mode'
+import { istAuskunft, useRolle } from '@/lib/use-rolle'
+import { AuskunftDashboard } from '@/components/admin/AuskunftDashboard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -22,6 +24,14 @@ export const Route = createFileRoute('/admin/_authenticated/')({
 })
 
 function DashboardPage() {
+  const rolle = useRolle()
+  if (istAuskunft(rolle)) {
+    return <AuskunftDashboard />
+  }
+  return <PersonalDashboard />
+}
+
+function PersonalDashboard() {
   const queryClient = useQueryClient()
 
   const neueAnfragenQuery = useQuery({

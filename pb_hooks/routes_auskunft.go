@@ -58,6 +58,35 @@ func auskunftBuchungProjektion(app core.App, b *core.Record) map[string]any {
 	}
 }
 
+// auskunftReferentenVon lädt die Referenten-Zuordnungen einer Buchung und
+// projiziert NUR name + telefon (für Kontaktaufnahme am Schalter) plus die
+// Ist-Erfassungs-Felder (zuordnung_id, geplant, eingesetzt).
+func auskunftReferentenVon(app core.App, buchungId string) ([]map[string]any, error) {
+	zuordnungen, err := app.FindRecordsByFilter("buchung_referenten",
+		"buchung = {:b}", "created", 0, 0, dbx.Params{"b": buchungId})
+	if err != nil {
+		return nil, err
+	}
+	refs := make([]map[string]any, 0, len(zuordnungen))
+	for _, z := range zuordnungen {
+		name, telefon := "", ""
+		if r, err := app.FindRecordById("referenten", z.GetString("referent")); err == nil && r != nil {
+			name = r.GetString("name")
+			telefon = r.GetString("telefon")
+		}
+		refs = append(refs, map[string]any{
+			"zuordnung_id": z.Id,
+			"geplant":      z.GetBool("geplant"),
+			"eingesetzt":   z.GetBool("eingesetzt"),
+			"referent": map[string]any{
+				"name":    name,
+				"telefon": telefon,
+			},
+		})
+	}
+	return refs, nil
+}
+
 func registerAuskunftRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
@@ -85,9 +114,21 @@ func registerAuskunftRoutes(app *pocketbase.PocketBase) {
 			if err != nil {
 				return apis.NewApiError(http.StatusInternalServerError, "Buchungen konnten nicht geladen werden.", nil)
 			}
+			// Optional: pro Zeile die Referent:innen (Name+Telefon) anhängen —
+			// nur für kleine Fenster (z. B. „heute") angefordert, spart N+1
+			// Detail-Calls. Harte Feldprojektion bleibt erhalten.
+			mitRef := q.Get("mit_referenten") == "1" || q.Get("mit_referenten") == "true"
 			out := make([]map[string]any, 0, len(recs))
 			for _, b := range recs {
-				out = append(out, auskunftBuchungProjektion(app, b))
+				proj := auskunftBuchungProjektion(app, b)
+				if mitRef {
+					refs, err := auskunftReferentenVon(app, b.Id)
+					if err != nil {
+						return apis.NewApiError(http.StatusInternalServerError, "Referent:innen konnten nicht geladen werden.", nil)
+					}
+					proj["referenten"] = refs
+				}
+				out = append(out, proj)
 			}
 			return e.JSON(http.StatusOK, out)
 		}).Bind(auth)
@@ -107,27 +148,9 @@ func registerAuskunftRoutes(app *pocketbase.PocketBase) {
 
 			// Referent:innen: NUR name + telefon (für Kontaktaufnahme am Schalter),
 			// plus Ist-Erfassungs-Felder (zuordnung_id, geplant, eingesetzt).
-			zuordnungen, err := app.FindRecordsByFilter("buchung_referenten",
-				"buchung = {:b}", "created", 0, 0, dbx.Params{"b": b.Id})
+			refs, err := auskunftReferentenVon(app, b.Id)
 			if err != nil {
 				return apis.NewApiError(http.StatusInternalServerError, "Zuordnungen konnten nicht geladen werden.", nil)
-			}
-			refs := make([]map[string]any, 0, len(zuordnungen))
-			for _, z := range zuordnungen {
-				name, telefon := "", ""
-				if r, err := app.FindRecordById("referenten", z.GetString("referent")); err == nil && r != nil {
-					name = r.GetString("name")
-					telefon = r.GetString("telefon")
-				}
-				refs = append(refs, map[string]any{
-					"zuordnung_id": z.Id,
-					"geplant":      z.GetBool("geplant"),
-					"eingesetzt":   z.GetBool("eingesetzt"),
-					"referent": map[string]any{
-						"name":    name,
-						"telefon": telefon,
-					},
-				})
 			}
 			res["referenten"] = refs
 			return e.JSON(http.StatusOK, res)

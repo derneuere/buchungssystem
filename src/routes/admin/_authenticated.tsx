@@ -23,9 +23,10 @@ export const Route = createFileRoute('/admin/_authenticated')({
     const rolle = aktuelleRolle()
     const path = location.pathname
 
-    // Auskunftsassistenz: nur Buchungsliste, Buchungsdetail und Hilfe.
+    // Auskunftsassistenz: nur Dashboard, Buchungsliste, Buchungsdetail und Hilfe.
     if (rolle === 'auskunft') {
       const erlaubt =
+        path === '/admin' ||
         path === '/admin/buchungen' ||
         path === '/admin/hilfe' ||
         (path.startsWith('/admin/buchungen/') && path !== '/admin/buchungen/neu')

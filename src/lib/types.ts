@@ -435,6 +435,9 @@ export interface AuskunftBuchung {
   teilnehmer_ist: number
   kontakt_name: string
   kontakt_telefon: string
+  // Nur gesetzt, wenn die Liste mit `mit_referenten` angefordert wurde
+  // (Detail-Route liefert es stets, siehe AuskunftBuchungDetail).
+  referenten?: AuskunftReferent[]
 }
 
 export interface AuskunftReferent {

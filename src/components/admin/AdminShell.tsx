@@ -57,7 +57,7 @@ const ROLLE_LABEL: Record<Rolle, string> = {
 }
 
 const HAUPTNAVIGATION: NavItem[] = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true, rollen: PERSONAL },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true }, // alle drei Rollen
   { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList }, // alle drei Rollen
   { to: '/admin/buchungen/neu', label: 'Neue Buchung', icon: FilePlus, exact: true, rollen: PERSONAL },
   { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart, rollen: PERSONAL },

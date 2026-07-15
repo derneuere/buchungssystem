@@ -136,6 +136,7 @@ export function adminIstErfassung(
 export function auskunftBuchungen(params?: {
   von?: string
   bis?: string
+  mit_referenten?: boolean
 }): Promise<AuskunftBuchung[]> {
   return pb.send('/api/auskunft/buchungen', { method: 'GET', query: params ?? {} })
 }
