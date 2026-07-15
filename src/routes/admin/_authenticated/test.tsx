@@ -41,14 +41,14 @@ export const Route = createFileRoute('/admin/_authenticated/test')({
 
 function offsetText(sekunden: number): string {
   if (sekunden === 0) return 'kein Offset (Echtzeit)'
-  const tage = sekunden / 86400
-  const ganzeTage = Math.trunc(tage)
+  const abs = Math.abs(sekunden)
+  const tage = Math.floor(abs / 86400)
+  const stunden = Math.round((abs % 86400) / 3600)
   const vorzeichen = sekunden > 0 ? '+' : '−'
-  if (Number.isInteger(tage)) {
-    return `${vorzeichen}${Math.abs(ganzeTage)} Tag(e)`
-  }
-  const stunden = Math.round(Math.abs(sekunden) / 3600)
-  return `${vorzeichen}${stunden} Stunde(n)`
+  const teile: string[] = []
+  if (tage) teile.push(`${tage} Tag(e)`)
+  if (stunden || !tage) teile.push(`${stunden} Std.`)
+  return `${vorzeichen}${teile.join(' ')}`
 }
 
 function TestModusPage() {
@@ -59,9 +59,9 @@ function TestModusPage() {
   const [datum, setDatum] = useState('')
   const [busy, setBusy] = useState<null | 'datum' | 'reset-uhr' | 'seed' | 'reset-daten' | 'verfall'>(null)
 
-  // Datums-Eingabe initial auf das simulierte Jetzt setzen.
+  // Eingabe initial auf das simulierte Jetzt setzen (datetime-local: "YYYY-MM-DDTHH:MM").
   useEffect(() => {
-    if (status?.jetzt_berlin) setDatum(status.jetzt_berlin.slice(0, 10))
+    if (status?.jetzt_berlin) setDatum(status.jetzt_berlin.replace(' ', 'T'))
   }, [status?.jetzt_berlin])
 
   function invalidateStatus() {
@@ -79,8 +79,8 @@ function TestModusPage() {
     }
     setBusy('datum')
     try {
-      const res = await testSetJetzt({ datum })
-      toast.success(`Simuliertes Datum gesetzt: ${res.jetzt_berlin} (${offsetText(res.offset_sekunden)}).`)
+      const res = await testSetJetzt({ iso: new Date(datum).toISOString() })
+      toast.success(`Simuliertes Jetzt gesetzt: ${res.jetzt_berlin} Uhr (${offsetText(res.offset_sekunden)}).`)
       invalidateStatus()
       invalidateAdmin()
     } catch (err) {
@@ -95,7 +95,7 @@ function TestModusPage() {
     try {
       const res = await testSetJetzt({ reset: true })
       toast.success('Uhr auf Echtzeit zurückgesetzt.')
-      if (res.jetzt_berlin) setDatum(res.jetzt_berlin.slice(0, 10))
+      if (res.jetzt_berlin) setDatum(res.jetzt_berlin.replace(' ', 'T'))
       invalidateStatus()
       invalidateAdmin()
     } catch (err) {
@@ -172,7 +172,7 @@ function TestModusPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">QA / Testmodus</h1>
           <p className="text-sm text-muted-foreground">
-            Simuliertes Datum steuern und Testdaten verwalten. Nur für die Erprobung — echte Daten bleiben unberührt.
+            Simuliertes Datum &amp; Uhrzeit steuern und Testdaten verwalten. Nur für die Erprobung — echte Daten bleiben unberührt.
           </p>
         </div>
       </div>
@@ -217,18 +217,18 @@ function TestModusPage() {
 
               <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-end">
                 <div className="space-y-2">
-                  <Label htmlFor="test-datum">Simuliertes Datum</Label>
+                  <Label htmlFor="test-datum">Simuliertes Datum &amp; Uhrzeit</Label>
                   <Input
                     id="test-datum"
-                    type="date"
+                    type="datetime-local"
                     value={datum}
                     onChange={(e) => setDatum(e.target.value)}
-                    className="w-48"
+                    className="w-60"
                   />
                 </div>
                 <Button onClick={handleDatumSetzen} disabled={busy !== null}>
                   {busy === 'datum' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
-                  Datum übernehmen
+                  Übernehmen
                 </Button>
                 <Button variant="outline" onClick={handleEchtzeit} disabled={busy !== null}>
                   {busy === 'reset-uhr' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
@@ -236,7 +236,7 @@ function TestModusPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Die Uhrzeit bleibt erhalten (heute + N Tage) und läuft ab dem gesetzten Punkt normal weiter.
+                Datum und Uhrzeit werden exakt übernommen; die Uhr läuft ab dem gesetzten Zeitpunkt normal weiter.
               </p>
             </CardContent>
           </Card>

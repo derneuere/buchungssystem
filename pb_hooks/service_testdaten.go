@@ -246,6 +246,47 @@ func generateTestdaten(app core.App) (map[string]any, error) {
 			{status: "abgelehnt", offsetTage: -10, slot: "10:00", seminar: false, gruppe: 15, ist: -1, zuordnung: "", bundesland: "ausland_oder_keine_angabe"},
 		}
 
+		// --- Historische Buchungen (durchgeführt) über die letzten ~12 Monate,
+		// damit die Auswertungen (Herkunft, Soll/Ist, Auslastung, Zeitreihe)
+		// aussagekräftig sind. Deterministisch über Indizes gestreut.
+		bundeslaender := []string{
+			"baden_wuerttemberg", "bayern", "berlin", "brandenburg", "bremen",
+			"hamburg", "hessen", "mecklenburg_vorpommern", "niedersachsen",
+			"nordrhein_westfalen", "rheinland_pfalz", "saarland", "sachsen",
+			"sachsen_anhalt", "schleswig_holstein", "thueringen",
+		}
+		histSlots := []string{"09:00", "10:00", "12:00", "13:00", "14:00"}
+		k := 0
+		for monat := 1; monat <= 12; monat++ {
+			for _, tag := range []int{4, 13, 23} {
+				gruppe := 12 + (k*3)%22
+				ist := gruppe
+				switch k % 4 {
+				case 1:
+					ist = gruppe - 2
+				case 2:
+					ist = gruppe - 5
+				case 3:
+					if k%8 == 3 {
+						ist = 0
+					}
+				}
+				if ist < 0 {
+					ist = 0
+				}
+				specs = append(specs, buchungSpec{
+					status:     "durchgefuehrt",
+					offsetTage: -(monat*30 + tag),
+					slot:       histSlots[k%len(histSlots)],
+					seminar:    k%3 == 0,
+					gruppe:     gruppe,
+					ist:        ist,
+					zuordnung:  "eingesetzt",
+					bundesland: bundeslaender[k%len(bundeslaender)],
+				})
+				k++
+			}
+		}
 		for i, sp := range specs {
 			ang := fuehrung
 			if sp.seminar {
