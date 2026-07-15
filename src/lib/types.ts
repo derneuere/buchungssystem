@@ -301,6 +301,27 @@ export interface VorschlagResult {
 
 export type Warnstufe = 'ok' | 'weich' | 'hart'
 
+export interface ReferentKandidat {
+  id: string
+  name: string
+  zugewiesen: boolean
+  themaMatch: boolean
+  verfuegbar: boolean
+  konflikt: boolean
+  warnstufe: Warnstufe
+  einsaetze_tag: number
+  einsaetze_woche: number
+  einsaetze_gesamt: number
+  auslastung_relativ: 'ueber' | 'schnitt' | 'unter'
+}
+
+export interface KandidatenResult {
+  kandidaten: ReferentKandidat[]
+  benoetigt: number
+  geplant: number
+  schnitt_gesamt: number
+}
+
 export interface PruefeResult {
   verfuegbar: boolean
   konflikt: boolean

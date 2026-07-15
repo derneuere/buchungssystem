@@ -35,15 +35,16 @@ func main() {
 	})
 
 	// Each cluster owns its own register function (split, don't centralize).
-	registerPublicRoutes(app)         // routes_public.go
-	registerAdminBuchungenRoutes(app) // routes_admin_buchungen.go
-	registerAdminBuchungManuell(app)  // routes_admin_buchung_manuell.go — manuelle Erfassung
-	registerAdminReportRoutes(app)    // routes_admin_reports.go
-	registerMitarbeiterRoutes(app)    // routes_mitarbeiter.go — Einladungs-Flow
-	registerMailHooks(app)            // hooks_mail.go — buchungen create-guard
-	registerCron(app)                 // cron.go — Verfall-Job
-	registerTestRoutes(app)           // routes_test.go — QA-/Testmodus (nur bei TEST_MODE)
-	registerStaticServing(app)        // static.go — SPA + CSP (zuletzt)
+	registerPublicRoutes(app)          // routes_public.go
+	registerAdminBuchungenRoutes(app)  // routes_admin_buchungen.go
+	registerAdminBuchungManuell(app)   // routes_admin_buchung_manuell.go — manuelle Erfassung
+	registerAdminKandidatenRoutes(app) // routes_admin_kandidaten.go — Referenten-Kandidaten + Kennzahlen
+	registerAdminReportRoutes(app)     // routes_admin_reports.go
+	registerMitarbeiterRoutes(app)     // routes_mitarbeiter.go — Einladungs-Flow
+	registerMailHooks(app)             // hooks_mail.go — buchungen create-guard
+	registerCron(app)                  // cron.go — Verfall-Job
+	registerTestRoutes(app)            // routes_test.go — QA-/Testmodus (nur bei TEST_MODE)
+	registerStaticServing(app)         // static.go — SPA + CSP (zuletzt)
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)

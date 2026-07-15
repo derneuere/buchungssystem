@@ -4,6 +4,7 @@ import type {
   BuchungsanfrageInput,
   BuchungsanfrageResponse,
   HerkunftReportZeile,
+  KandidatenResult,
   PruefeResult,
   ReferentenAuslastungZeile,
   SlotsResponse,
@@ -60,6 +61,11 @@ export function adminReferentPruefen(
     method: 'POST',
     body: { referentId },
   })
+}
+
+/** Referent:innen-Kandidaten für eine Buchung inkl. Auslastungs-Kennzahlen. */
+export function adminReferentenKandidaten(buchungId: string): Promise<KandidatenResult> {
+  return pb.send(`/api/admin/buchungen/${buchungId}/referenten-kandidaten`, { method: 'GET' })
 }
 
 export interface BestaetigenWarnung {
