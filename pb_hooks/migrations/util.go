@@ -27,3 +27,55 @@ func addTimestamps(c *core.Collection) {
 		&core.AutodateField{Name: "updated", OnCreate: true, OnUpdate: true},
 	)
 }
+
+// setRules setzt List/View/Create/Update/Delete-Rule einer Collection in einem
+// Aufruf (nil = superuser-only) und speichert. Wird von der RBAC-Migration 0007
+// genutzt, um die Rechte-Matrix atomar zu setzen.
+func setRules(app core.App, name string, list, view, create, update, del *string) error {
+	col, err := app.FindCollectionByNameOrId(name)
+	if err != nil {
+		return err
+	}
+	col.ListRule = list
+	col.ViewRule = view
+	col.CreateRule = create
+	col.UpdateRule = update
+	col.DeleteRule = del
+	return app.Save(col)
+}
+
+// setCUD setzt nur Create/Update/Delete-Rule (List/View unangetastet).
+func setCUD(app core.App, name string, rule *string) error {
+	col, err := app.FindCollectionByNameOrId(name)
+	if err != nil {
+		return err
+	}
+	col.CreateRule = rule
+	col.UpdateRule = rule
+	col.DeleteRule = rule
+	return app.Save(col)
+}
+
+// setUpdateOnly setzt nur die Update-Rule (für Singletons wie einstellungen,
+// die kein Create/Delete kennen).
+func setUpdateOnly(app core.App, name string, rule *string) error {
+	col, err := app.FindCollectionByNameOrId(name)
+	if err != nil {
+		return err
+	}
+	col.UpdateRule = rule
+	return app.Save(col)
+}
+
+// setListView setzt nur List/View-Rule (C/U/D unangetastet). Wird von 0007
+// genutzt, um rein interne Collections vom Direkt-REST-Lesen der Auskunftsrolle
+// auszuschließen, ohne öffentlich lesbare Stammdaten anzufassen.
+func setListView(app core.App, name string, list, view *string) error {
+	col, err := app.FindCollectionByNameOrId(name)
+	if err != nil {
+		return err
+	}
+	col.ListRule = list
+	col.ViewRule = view
+	return app.Save(col)
+}

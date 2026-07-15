@@ -10,7 +10,7 @@ import { Copy, Loader2, Mail, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { pb } from '@/lib/pocketbase'
-import type { Mitarbeiter } from '@/lib/types'
+import type { Mitarbeiter, Rolle } from '@/lib/types'
 import { mitarbeiterEinladen } from '@/lib/api'
 import { getDeleteErrorMessage, getErrorMessage } from '@/lib/admin-errors'
 
@@ -37,7 +37,11 @@ export const Route = createFileRoute('/admin/_authenticated/mitarbeiter')({
 
 const QUERY_KEY = ['admin', 'mitarbeiter']
 
-const ROLLE_LABEL: Record<string, string> = { mitarbeiter: 'Mitarbeiter', leitung: 'Leitung' }
+const ROLLE_LABEL: Record<string, string> = {
+  mitarbeiter: 'Mitarbeiter',
+  leitung: 'Leitung',
+  auskunft: 'Auskunftsassistenz',
+}
 
 async function kopieren(text: string) {
   try {
@@ -58,7 +62,7 @@ function MitarbeiterPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [email, setEmail] = useState('')
-  const [rolle, setRolle] = useState<'mitarbeiter' | 'leitung'>('mitarbeiter')
+  const [rolle, setRolle] = useState<Rolle>('mitarbeiter')
   const [saving, setSaving] = useState(false)
   const [letzterLink, setLetzterLink] = useState<string | null>(null)
 
@@ -73,7 +77,7 @@ function MitarbeiterPage() {
     setDialogOpen(true)
   }
 
-  async function einladen(inviteEmail: string, inviteRolle: 'mitarbeiter' | 'leitung') {
+  async function einladen(inviteEmail: string, inviteRolle: Rolle) {
     setSaving(true)
     try {
       const res = await mitarbeiterEinladen({ email: inviteEmail.trim(), rolle: inviteRolle })
@@ -175,7 +179,7 @@ function MitarbeiterPage() {
                           aria-label="Erneut einladen"
                           title="Erneut einladen (neuer Link)"
                           disabled={saving}
-                          onClick={() => einladen(m.email, (m.rolle as 'mitarbeiter' | 'leitung') || 'mitarbeiter')}
+                          onClick={() => einladen(m.email, (m.rolle as Rolle) || 'mitarbeiter')}
                         >
                           <RefreshCw className="h-4 w-4" />
                         </Button>
@@ -229,13 +233,14 @@ function MitarbeiterPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="invite-rolle">Rolle</Label>
-                <Select value={rolle} onValueChange={(v) => setRolle(v as 'mitarbeiter' | 'leitung')}>
+                <Select value={rolle} onValueChange={(v) => setRolle(v as Rolle)}>
                   <SelectTrigger id="invite-rolle">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mitarbeiter">Mitarbeiter</SelectItem>
                     <SelectItem value="leitung">Leitung</SelectItem>
+                    <SelectItem value="auskunft">Auskunftsassistenz (nur Schalter)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

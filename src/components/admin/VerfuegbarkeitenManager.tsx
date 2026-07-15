@@ -61,7 +61,14 @@ function zeitraumLabel(v: Verfuegbarkeit): string {
   return `${wochentagLabel(v.wochentag)}, ${v.zeit_von}–${v.zeit_bis} Uhr (ab ${formatDate(v.gueltig_ab)}, ${gueltig})`
 }
 
-export function VerfuegbarkeitenManager({ referentId }: { referentId: string }) {
+export function VerfuegbarkeitenManager({
+  referentId,
+  nurLesen = false,
+}: {
+  referentId: string
+  /** Nur-Lese-Modus (mitarbeiter): Anlegen/Löschen ausgeblendet. */
+  nurLesen?: boolean
+}) {
   const queryClient = useQueryClient()
   const queryKey = ['admin', 'verfuegbarkeiten', referentId]
 
@@ -141,10 +148,12 @@ export function VerfuegbarkeitenManager({ referentId }: { referentId: string }) 
         <p className="text-sm text-muted-foreground">
           Wochenmuster + Ausnahmen. „Gesperrt" hat Vorrang vor „Verfügbar".
         </p>
-        <Button type="button" size="sm" variant="outline" onClick={openCreate}>
-          <Plus className="h-4 w-4" />
-          Neu
-        </Button>
+        {!nurLesen && (
+          <Button type="button" size="sm" variant="outline" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Neu
+          </Button>
+        )}
       </div>
 
       <Table>
@@ -153,20 +162,20 @@ export function VerfuegbarkeitenManager({ referentId }: { referentId: string }) 
             <TableHead>Art</TableHead>
             <TableHead>Zeitraum</TableHead>
             <TableHead>Notiz</TableHead>
-            <TableHead className="text-right">Aktionen</TableHead>
+            {!nurLesen && <TableHead className="text-right">Aktionen</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
           {query.isLoading && (
             <TableRow>
-              <TableCell colSpan={4}>
+              <TableCell colSpan={nurLesen ? 3 : 4}>
                 <Skeleton className="h-6 w-full" />
               </TableCell>
             </TableRow>
           )}
           {!query.isLoading && (query.data?.length ?? 0) === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="py-6 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={nurLesen ? 3 : 4} className="py-6 text-center text-sm text-muted-foreground">
                 Noch keine Einträge.
               </TableCell>
             </TableRow>
@@ -180,17 +189,19 @@ export function VerfuegbarkeitenManager({ referentId }: { referentId: string }) 
               </TableCell>
               <TableCell className="text-sm">{zeitraumLabel(v)}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{v.notiz || '–'}</TableCell>
-              <TableCell className="text-right">
-                <ConfirmDeleteDialog
-                  trigger={
-                    <Button variant="ghost" size="icon" aria-label="Löschen">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  }
-                  title="Eintrag löschen?"
-                  onConfirm={() => handleDelete(v)}
-                />
-              </TableCell>
+              {!nurLesen && (
+                <TableCell className="text-right">
+                  <ConfirmDeleteDialog
+                    trigger={
+                      <Button variant="ghost" size="icon" aria-label="Löschen">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    }
+                    title="Eintrag löschen?"
+                    onConfirm={() => handleDelete(v)}
+                  />
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

@@ -5,6 +5,7 @@
 
 import { useState, type ComponentType, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   CalendarClock,
@@ -24,11 +25,15 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { pb } from '@/lib/pocketbase'
-import type { Mitarbeiter } from '@/lib/types'
+import type { Mitarbeiter, Rolle } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { useTestStatus } from '@/lib/use-test-mode'
+import { useTestStatus, TEST_STATUS_KEY } from '@/lib/use-test-mode'
+import { useRolle } from '@/lib/use-rolle'
+import { testResetRolle } from '@/lib/api'
+import { getErrorMessage } from '@/lib/admin-errors'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 
@@ -37,31 +42,46 @@ type NavItem = {
   label: string
   icon: ComponentType<{ className?: string }>
   exact?: boolean
+  /** Sichtbar für diese Rollen; ohne Angabe für alle sichtbar. */
+  rollen?: Rolle[]
+}
+
+const PERSONAL: Rolle[] = ['leitung', 'mitarbeiter']
+const NUR_LEITUNG: Rolle[] = ['leitung']
+
+const ROLLE_LABEL: Record<Rolle, string> = {
+  leitung: 'Leitung',
+  mitarbeiter: 'Mitarbeiter',
+  auskunft: 'Auskunftsassistenz',
 }
 
 const HAUPTNAVIGATION: NavItem[] = [
-  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList },
-  { to: '/admin/buchungen/neu', label: 'Neue Buchung', icon: FilePlus, exact: true },
-  { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart },
+  { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true, rollen: PERSONAL },
+  { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList }, // alle drei Rollen
+  { to: '/admin/buchungen/neu', label: 'Neue Buchung', icon: FilePlus, exact: true, rollen: PERSONAL },
+  { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart, rollen: PERSONAL },
 ]
 
 const STAMMDATEN_NAVIGATION: NavItem[] = [
-  { to: '/admin/referenten', label: 'Referenten', icon: Users },
-  { to: '/admin/verfuegbarkeiten', label: 'Verfügbarkeiten', icon: CalendarRange },
-  { to: '/admin/themen', label: 'Themen', icon: Sparkles },
-  { to: '/admin/angebotsarten', label: 'Angebotsarten', icon: CalendarClock },
-  { to: '/admin/raeume', label: 'Räume', icon: Landmark },
-  { to: '/admin/einrichtungstypen', label: 'Einrichtungstypen', icon: Landmark },
-  { to: '/admin/schliesstage', label: 'Schließtage', icon: CalendarDays },
+  { to: '/admin/referenten', label: 'Referenten', icon: Users, rollen: PERSONAL },
+  { to: '/admin/verfuegbarkeiten', label: 'Verfügbarkeiten', icon: CalendarRange, rollen: PERSONAL },
+  { to: '/admin/themen', label: 'Themen', icon: Sparkles, rollen: PERSONAL },
+  { to: '/admin/angebotsarten', label: 'Angebotsarten', icon: CalendarClock, rollen: PERSONAL },
+  { to: '/admin/raeume', label: 'Räume', icon: Landmark, rollen: PERSONAL },
+  { to: '/admin/einrichtungstypen', label: 'Einrichtungstypen', icon: Landmark, rollen: PERSONAL },
+  { to: '/admin/schliesstage', label: 'Schließtage', icon: CalendarDays, rollen: PERSONAL },
 ]
 
 const SYSTEM_NAVIGATION: NavItem[] = [
-  { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus },
-  { to: '/admin/einbetten', label: 'Einbetten', icon: Code2 },
-  { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen },
-  { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings },
+  { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus, rollen: NUR_LEITUNG },
+  { to: '/admin/einbetten', label: 'Einbetten', icon: Code2, rollen: PERSONAL },
+  { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen }, // alle drei Rollen
+  { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings, rollen: PERSONAL },
 ]
+
+function sichtbarFuer(items: NavItem[], rolle: Rolle | null): NavItem[] {
+  return items.filter((i) => !i.rollen || (rolle != null && i.rollen.includes(rolle)))
+}
 
 function useCurrentPath(): string {
   return useRouterState({ select: (s) => s.location.pathname })
@@ -117,16 +137,22 @@ function NavGroup({
 function SidebarBody({
   pathname,
   mitarbeiter,
+  rolle,
   loggingOut,
   onLogout,
   onNavigate,
+  hauptItems,
+  stammItems,
   systemItems,
 }: {
   pathname: string
   mitarbeiter: Mitarbeiter | null
+  rolle: Rolle | null
   loggingOut: boolean
   onLogout: () => void
   onNavigate?: () => void
+  hauptItems: NavItem[]
+  stammItems: NavItem[]
   systemItems: NavItem[]
 }) {
   return (
@@ -143,9 +169,15 @@ function SidebarBody({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto py-2">
-        <NavGroup label="Übersicht" items={HAUPTNAVIGATION} pathname={pathname} onNavigate={onNavigate} />
-        <NavGroup label="Stammdaten" items={STAMMDATEN_NAVIGATION} pathname={pathname} onNavigate={onNavigate} />
-        <NavGroup label="System" items={systemItems} pathname={pathname} onNavigate={onNavigate} />
+        {hauptItems.length > 0 && (
+          <NavGroup label="Übersicht" items={hauptItems} pathname={pathname} onNavigate={onNavigate} />
+        )}
+        {stammItems.length > 0 && (
+          <NavGroup label="Stammdaten" items={stammItems} pathname={pathname} onNavigate={onNavigate} />
+        )}
+        {systemItems.length > 0 && (
+          <NavGroup label="System" items={systemItems} pathname={pathname} onNavigate={onNavigate} />
+        )}
       </div>
       <div className="border-t p-3">
         <div className="flex items-center justify-between gap-2">
@@ -153,7 +185,9 @@ function SidebarBody({
             <p className="truncate text-sm font-medium">
               {mitarbeiter?.name || mitarbeiter?.email || 'Personal'}
             </p>
-            <p className="truncate text-xs text-muted-foreground">{mitarbeiter?.email}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {rolle ? ROLLE_LABEL[rolle] : mitarbeiter?.email}
+            </p>
           </div>
           <Button
             type="button"
@@ -174,23 +208,49 @@ function SidebarBody({
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const pathname = useCurrentPath()
   const [loggingOut, setLoggingOut] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [resettingRolle, setResettingRolle] = useState(false)
   const mitarbeiter = pb.authStore.record as Mitarbeiter | null
+  const rolle = useRolle()
 
   // QA-/Testmodus: Nav-Eintrag nur, wenn der Server mit TEST_MODE läuft; Banner
   // zusätzlich nur, wenn gerade ein simuliertes Datum aktiv ist. Ohne TEST_MODE
   // liefert die Status-Route 404 → `test` bleibt undefined → alles unsichtbar.
   const { data: test } = useTestStatus()
-  const systemNav: NavItem[] = test?.test_mode
-    ? [...SYSTEM_NAVIGATION, { to: '/admin/test', label: 'QA / Testmodus', icon: FlaskConical }]
-    : SYSTEM_NAVIGATION
+  // QA-Seite nur für Personal (leitung/mitarbeiter) im Menü; wird auf 'auskunft'
+  // simuliert, verschwindet sie — der Reset läuft dann über den QA-Balken.
+  const systemBasis = sichtbarFuer(SYSTEM_NAVIGATION, rolle)
+  const systemNav: NavItem[] =
+    test?.test_mode && (rolle === 'leitung' || rolle === 'mitarbeiter')
+      ? [...systemBasis, { to: '/admin/test', label: 'QA / Testmodus', icon: FlaskConical }]
+      : systemBasis
+  const hauptNav = sichtbarFuer(HAUPTNAVIGATION, rolle)
+  const stammNav = sichtbarFuer(STAMMDATEN_NAVIGATION, rolle)
 
   function handleLogout() {
     setLoggingOut(true)
     pb.authStore.clear()
     navigate({ to: '/admin/login' })
+  }
+
+  async function handleRolleReset() {
+    setResettingRolle(true)
+    try {
+      await testResetRolle()
+      // authStore muss die echte Rolle wieder sehen.
+      await pb.collection('mitarbeiter').authRefresh()
+      queryClient.invalidateQueries({ queryKey: TEST_STATUS_KEY })
+      queryClient.invalidateQueries({ queryKey: ['admin'] })
+      toast.success('Auf echte Rolle zurückgesetzt.')
+      navigate({ to: '/admin' })
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Zurücksetzen fehlgeschlagen.'))
+    } finally {
+      setResettingRolle(false)
+    }
   }
 
   return (
@@ -200,8 +260,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <SidebarBody
           pathname={pathname}
           mitarbeiter={mitarbeiter}
+          rolle={rolle}
           loggingOut={loggingOut}
           onLogout={handleLogout}
+          hauptItems={hauptNav}
+          stammItems={stammNav}
           systemItems={systemNav}
         />
       </aside>
@@ -221,18 +284,41 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <SidebarBody
                 pathname={pathname}
                 mitarbeiter={mitarbeiter}
+                rolle={rolle}
                 loggingOut={loggingOut}
                 onLogout={() => {
                   setMobileOpen(false)
                   handleLogout()
                 }}
                 onNavigate={() => setMobileOpen(false)}
+                hauptItems={hauptNav}
+                stammItems={stammNav}
                 systemItems={systemNav}
               />
             </SheetContent>
           </Sheet>
           <span className="text-sm font-semibold">Admin-Panel</span>
         </header>
+
+        {/* QA-Rollen-Balken: rollenunabhängig, damit der Reset auch als
+            simulierte 'auskunft' (ohne QA-Menüeintrag) immer erreichbar ist. */}
+        {test?.test_mode && test?.rolle_override_aktiv && (
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 bg-violet-600 px-4 py-1.5 text-center text-sm font-medium text-white">
+            <span>
+              <FlaskConical className="mr-1 inline h-4 w-4" aria-hidden="true" />
+              Simulierte Rolle: {rolle ? ROLLE_LABEL[rolle] : '—'}
+              {test.qa_rolle_original ? ` (echt: ${ROLLE_LABEL[test.qa_rolle_original as Rolle] ?? test.qa_rolle_original})` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={handleRolleReset}
+              disabled={resettingRolle}
+              className="underline underline-offset-2 disabled:opacity-60"
+            >
+              Zurücksetzen
+            </button>
+          </div>
+        )}
 
         {/* QA-Banner: nur bei aktiv simuliertem Datum. */}
         {test?.aktiv && (

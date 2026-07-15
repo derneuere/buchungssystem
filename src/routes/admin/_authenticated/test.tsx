@@ -19,13 +19,16 @@ import {
   RotateCcw,
   Trash2,
   TriangleAlert,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { testReset, testSeed, testSetJetzt, testVerfall } from '@/lib/api'
+import { pb } from '@/lib/pocketbase'
+import { testReset, testResetRolle, testSeed, testSetJetzt, testSetRolle, testVerfall } from '@/lib/api'
 import { getErrorMessage } from '@/lib/admin-errors'
 import { useTestStatus, TEST_STATUS_KEY } from '@/lib/use-test-mode'
-import type { TestDatenZaehler } from '@/lib/types'
+import { useRolle } from '@/lib/use-rolle'
+import type { Rolle, TestDatenZaehler } from '@/lib/types'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -51,13 +54,54 @@ function offsetText(sekunden: number): string {
   return `${vorzeichen}${teile.join(' ')}`
 }
 
+const ROLLEN: { value: Rolle; label: string }[] = [
+  { value: 'leitung', label: 'Leitung' },
+  { value: 'mitarbeiter', label: 'Mitarbeiter' },
+  { value: 'auskunft', label: 'Auskunftsassistenz' },
+]
+
 function TestModusPage() {
   const queryClient = useQueryClient()
   const statusQuery = useTestStatus()
   const status = statusQuery.data
+  const rolle = useRolle()
 
   const [datum, setDatum] = useState('')
   const [busy, setBusy] = useState<null | 'datum' | 'reset-uhr' | 'seed' | 'reset-daten' | 'verfall'>(null)
+  const [rolleBusy, setRolleBusy] = useState(false)
+
+  async function nachRollenwechsel() {
+    // authStore muss die (neue) wirksame Rolle sehen, dann alles neu laden.
+    await pb.collection('mitarbeiter').authRefresh()
+    queryClient.invalidateQueries({ queryKey: TEST_STATUS_KEY })
+    queryClient.invalidateQueries({ queryKey: ['admin'] })
+  }
+
+  async function handleSetRolle(ziel: Rolle) {
+    setRolleBusy(true)
+    try {
+      await testSetRolle(ziel)
+      await nachRollenwechsel()
+      toast.success(`Simulierte Rolle: ${ROLLEN.find((r) => r.value === ziel)?.label ?? ziel}.`)
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Rolle konnte nicht gesetzt werden.'))
+    } finally {
+      setRolleBusy(false)
+    }
+  }
+
+  async function handleResetRolle() {
+    setRolleBusy(true)
+    try {
+      await testResetRolle()
+      await nachRollenwechsel()
+      toast.success('Auf echte Rolle zurückgesetzt.')
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Zurücksetzen fehlgeschlagen.'))
+    } finally {
+      setRolleBusy(false)
+    }
+  }
 
   // Eingabe initial auf das simulierte Jetzt setzen (datetime-local: "YYYY-MM-DDTHH:MM").
   useEffect(() => {
@@ -192,6 +236,49 @@ function TestModusPage() {
 
       {status?.test_mode && (
         <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Users className="h-4 w-4" /> Rolle simulieren
+              </CardTitle>
+              <CardDescription>
+                Wirksame Rolle temporär umschalten, um alle Aktionen jeder Rolle zu testen. Der Override wirkt in
+                Frontend UND Backend (Collection-Rules + Route-Guards). Zurücksetzen ist jederzeit über den violetten
+                Balken oben erreichbar — auch als Auskunftsassistenz.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm">
+                Aktuell wirksame Rolle:{' '}
+                <span className="font-medium">{ROLLEN.find((r) => r.value === rolle)?.label ?? '—'}</span>
+                {status.rolle_override_aktiv && status.qa_rolle_original && (
+                  <span className="text-muted-foreground">
+                    {' '}
+                    (echt: {ROLLEN.find((r) => r.value === status.qa_rolle_original)?.label ?? status.qa_rolle_original})
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ROLLEN.map((r) => (
+                  <Button
+                    key={r.value}
+                    variant={rolle === r.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleSetRolle(r.value)}
+                    disabled={rolleBusy || rolle === r.value}
+                  >
+                    {rolleBusy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                    {r.label}
+                  </Button>
+                ))}
+                <Button variant="ghost" size="sm" onClick={handleResetRolle} disabled={rolleBusy || !status.rolle_override_aktiv}>
+                  <RotateCcw className="h-4 w-4" />
+                  Auf echte Rolle zurücksetzen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">

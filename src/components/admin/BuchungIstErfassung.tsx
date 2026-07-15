@@ -8,6 +8,7 @@ import { Loader2, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { pb } from '@/lib/pocketbase'
+import { adminIstErfassung } from '@/lib/api'
 import { getErrorMessage } from '@/lib/admin-errors'
 import type { Buchung, BuchungReferent, Referent } from '@/lib/types'
 
@@ -72,7 +73,7 @@ export function BuchungIstErfassung({
   async function handleToggleEingesetzt(rowId: string, next: boolean) {
     setTogglingId(rowId)
     try {
-      await pb.collection('buchung_referenten').update(rowId, { eingesetzt: next })
+      await adminIstErfassung(buchung.id, { eingesetzt: [{ zuordnung_id: rowId, eingesetzt: next }] })
       invalidateZuordnungen()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Speichern fehlgeschlagen.'))
@@ -90,9 +91,9 @@ export function BuchungIstErfassung({
     const setBusy = statusUeberschreiben ? setMarkingDurchgefuehrt : setSavingTeilnehmer
     setBusy(true)
     try {
-      await pb.collection('buchungen').update(buchung.id, {
+      await adminIstErfassung(buchung.id, {
         teilnehmer_ist: wert,
-        ...(statusUeberschreiben ? { status: statusUeberschreiben } : {}),
+        ...(statusUeberschreiben ? { durchgefuehrt: true } : {}),
       })
       toast.success(statusUeberschreiben ? 'Buchung als durchgeführt markiert.' : 'Ist-Teilnehmerzahl gespeichert.')
       onChanged()
@@ -106,9 +107,16 @@ export function BuchungIstErfassung({
   async function handleNiemandErschienen() {
     setMarkingDurchgefuehrt(true)
     try {
-      await pb.collection('buchungen').update(buchung.id, { teilnehmer_ist: 0, status: 'durchgefuehrt' })
+      // Niemand erschienen: teilnehmer_ist=0, alle Zuordnungen auf nicht eingesetzt,
+      // Abschluss durchgeführt — alles über die feld-whitelistende Ist-Route.
+      await adminIstErfassung(buchung.id, {
+        teilnehmer_ist: 0,
+        durchgefuehrt: true,
+        eingesetzt: (zuordnungenQuery.data ?? []).map((z) => ({ zuordnung_id: z.id, eingesetzt: false })),
+      })
       setTeilnehmerIst('0')
       toast.success('Als „niemand erschienen" erfasst.')
+      invalidateZuordnungen()
       onChanged()
     } catch (err) {
       toast.error(getErrorMessage(err, 'Speichern fehlgeschlagen.'))
@@ -124,14 +132,7 @@ export function BuchungIstErfassung({
   async function handleAddSpontan(referent: Referent) {
     setComboOpen(false)
     try {
-      await pb.collection('buchung_referenten').create({
-        buchung: buchung.id,
-        referent: referent.id,
-        geplant: false,
-        eingesetzt: true,
-        quelle: 'manuell',
-        notiz: 'Spontane Vertretung (Ist-Erfassung)',
-      })
+      await adminIstErfassung(buchung.id, { spontane_vertretung: [{ referent_id: referent.id }] })
       toast.success(`${referent.name} als spontane Vertretung erfasst.`)
       invalidateZuordnungen()
     } catch (err) {

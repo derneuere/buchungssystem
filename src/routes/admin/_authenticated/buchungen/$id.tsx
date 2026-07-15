@@ -12,6 +12,8 @@ import type { Buchung } from '@/lib/types'
 import { bundeslandLabel, formatDate, formatZeitraum, tagKey } from '@/lib/admin-format'
 import { getErrorMessage } from '@/lib/admin-errors'
 import { useJetzt } from '@/lib/use-test-mode'
+import { istAuskunft, useRolle } from '@/lib/use-rolle'
+import { AuskunftBuchungDetail } from '@/components/admin/AuskunftBuchungDetail'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +37,14 @@ export const Route = createFileRoute('/admin/_authenticated/buchungen/$id')({
 
 function BuchungDetailPage() {
   const { id } = Route.useParams()
+  const rolle = useRolle()
+  if (istAuskunft(rolle)) {
+    return <AuskunftBuchungDetail id={id} />
+  }
+  return <PersonalBuchungDetail id={id} />
+}
+
+function PersonalBuchungDetail({ id }: { id: string }) {
   const queryClient = useQueryClient()
   const buchungKey = ['admin', 'buchung', id]
   const [statusBusy, setStatusBusy] = useState(false)

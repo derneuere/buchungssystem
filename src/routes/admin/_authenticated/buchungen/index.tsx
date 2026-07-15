@@ -7,8 +7,10 @@ import { z } from 'zod'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
-import type { Angebotsart, Buchung, BuchungStatus } from '@/lib/types'
+import type { Angebotsart, AuskunftBuchung, Buchung, BuchungStatus } from '@/lib/types'
 import { STATUS_LABEL } from '@/lib/types'
+import { auskunftBuchungen } from '@/lib/api'
+import { istAuskunft, useRolle } from '@/lib/use-rolle'
 import { formatDateTime } from '@/lib/admin-format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,6 +57,14 @@ function buildFilter(search: BuchungenSearch): string {
 }
 
 function BuchungenListPage() {
+  const rolle = useRolle()
+  if (istAuskunft(rolle)) {
+    return <AuskunftBuchungenListe />
+  }
+  return <PersonalBuchungenListe />
+}
+
+function PersonalBuchungenListe() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const page = search.page ?? 1
@@ -231,6 +241,118 @@ function BuchungenListPage() {
           </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// Schlanke Auskunfts-Liste: serverseitig auf bestätigt/durchgeführt gefiltert und
+// auf die erlaubten Felder projiziert (keine E-Mail, keine Herkunft, kein
+// Statusfilter). Datenquelle: GET /api/auskunft/buchungen.
+function AuskunftBuchungenListe() {
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
+
+  const query = useQuery({
+    queryKey: ['admin', 'auskunft', 'buchungen', search.von, search.bis],
+    queryFn: () => auskunftBuchungen({ von: search.von, bis: search.bis }),
+  })
+
+  function updateSearch(patch: Partial<BuchungenSearch>) {
+    navigate({ search: (prev) => ({ ...prev, ...patch, page: 1 }) })
+  }
+
+  const items = query.data ?? []
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Buchungen</h1>
+        <p className="text-sm text-muted-foreground">
+          Bestätigte und durchgeführte Termine für die Auskunft am Schalter.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Zeitraum</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="filter-von">Zeitraum von</Label>
+              <Input
+                id="filter-von"
+                type="date"
+                value={search.von ?? ''}
+                onChange={(e) => updateSearch({ von: e.target.value || undefined })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="filter-bis">Zeitraum bis</Label>
+              <Input
+                id="filter-bis"
+                type="date"
+                value={search.bis ?? ''}
+                onChange={(e) => updateSearch({ bis: e.target.value || undefined })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Kontakt</TableHead>
+                <TableHead>Angebot</TableHead>
+                <TableHead>Termin</TableHead>
+                <TableHead>Teiln.</TableHead>
+                <TableHead>Raum</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {query.isLoading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell colSpan={6}>
+                      <Skeleton className="h-6 w-full" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              {!query.isLoading && items.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                    Keine bestätigten oder durchgeführten Termine im Zeitraum.
+                  </TableCell>
+                </TableRow>
+              )}
+              {items.map((b: AuskunftBuchung) => (
+                <TableRow key={b.id} className="cursor-pointer">
+                  <TableCell>
+                    <Link to="/admin/buchungen/$id" params={{ id: b.id }} className="hover:underline">
+                      <div className="font-medium">{b.kontakt_name}</div>
+                      <div className="text-xs text-muted-foreground">{b.kontakt_telefon || '–'}</div>
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <div>{b.angebotsart || '–'}</div>
+                    <div className="text-xs text-muted-foreground">{b.thema || '–'}</div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDateTime(b.start)}</TableCell>
+                  <TableCell>{b.teilnehmer_geplant}</TableCell>
+                  <TableCell className="whitespace-nowrap">{b.raum || '–'}</TableCell>
+                  <TableCell>
+                    <StatusBadge status={b.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

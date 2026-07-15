@@ -22,6 +22,7 @@ import (
 func registerAdminBuchungManuell(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
+		personal := requireRolle("mitarbeiter", "leitung")
 
 		se.Router.POST("/api/admin/buchungen", func(e *core.RequestEvent) error {
 			var body struct {
@@ -104,7 +105,7 @@ func registerAdminBuchungManuell(app *pocketbase.PocketBase) {
 				return apis.NewApiError(http.StatusInternalServerError, "Buchung konnte nicht angelegt werden.", nil)
 			}
 			return e.JSON(http.StatusOK, map[string]any{"id": rec.Id, "status": "angefragt"})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		return se.Next()
 	})

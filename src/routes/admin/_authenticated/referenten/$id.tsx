@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { pb } from '@/lib/pocketbase'
 import type { Referent, Thema } from '@/lib/types'
 import { getErrorMessage } from '@/lib/admin-errors'
+import { istLeitung, useRolle } from '@/lib/use-rolle'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,6 +33,7 @@ function ReferentDetailPage() {
   const { id } = Route.useParams()
   const queryClient = useQueryClient()
   const queryKey = ['admin', 'referent', id]
+  const darfBearbeiten = istLeitung(useRolle())
 
   const referentQuery = useQuery({
     queryKey,
@@ -127,12 +129,23 @@ function ReferentDetailPage() {
         <h1 className="text-2xl font-semibold tracking-tight">{referentQuery.data?.name}</h1>
       </div>
 
+      {!darfBearbeiten && (
+        <Alert>
+          <TriangleAlert className="h-4 w-4" />
+          <AlertTitle>Nur-Lese-Ansicht</AlertTitle>
+          <AlertDescription>
+            Referenten-Stammdaten und Verfügbarkeiten können nur von der Leitung bearbeitet werden.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Stammdaten</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <fieldset disabled={!darfBearbeiten} className="m-0 min-w-0 space-y-4 border-0 p-0">
             <div className="space-y-2">
               <Label htmlFor="ref-name">Name *</Label>
               <Input id="ref-name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -175,10 +188,13 @@ function ReferentDetailPage() {
                 Aktiv (wird bei Vorschlägen berücksichtigt)
               </Label>
             </div>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              Speichern
-            </Button>
+            {darfBearbeiten && (
+              <Button onClick={handleSave} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                Speichern
+              </Button>
+            )}
+            </fieldset>
           </CardContent>
         </Card>
 
@@ -188,6 +204,7 @@ function ReferentDetailPage() {
             <CardDescription>Wird beim automatischen Vorschlag als Filterkriterium genutzt.</CardDescription>
           </CardHeader>
           <CardContent>
+            <fieldset disabled={!darfBearbeiten} className="m-0 min-w-0 border-0 p-0">
             {themenQuery.isLoading && <Skeleton className="h-32 w-full" />}
             {!themenQuery.isLoading && (themenQuery.data?.length ?? 0) === 0 && (
               <p className="text-sm text-muted-foreground">Noch keine Themen angelegt.</p>
@@ -207,10 +224,13 @@ function ReferentDetailPage() {
                 </div>
               ))}
             </div>
-            <Button onClick={handleSave} disabled={saving} className="mt-4">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              Speichern
-            </Button>
+            {darfBearbeiten && (
+              <Button onClick={handleSave} disabled={saving} className="mt-4">
+                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                Speichern
+              </Button>
+            )}
+            </fieldset>
           </CardContent>
         </Card>
       </div>
@@ -221,7 +241,7 @@ function ReferentDetailPage() {
           <CardDescription>Wochenmuster und Ausnahmen (verfügbar/gesperrt) dieser Person.</CardDescription>
         </CardHeader>
         <CardContent>
-          <VerfuegbarkeitenManager referentId={id} />
+          <VerfuegbarkeitenManager referentId={id} nurLesen={!darfBearbeiten} />
         </CardContent>
       </Card>
     </div>

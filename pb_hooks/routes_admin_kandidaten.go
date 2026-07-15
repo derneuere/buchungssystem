@@ -32,6 +32,7 @@ type referentKandidat struct {
 func registerAdminKandidatenRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
+		personal := requireRolle("mitarbeiter", "leitung")
 
 		se.Router.GET("/api/admin/buchungen/{id}/referenten-kandidaten", func(e *core.RequestEvent) error {
 			b, err := app.FindRecordById("buchungen", e.Request.PathValue("id"))
@@ -190,7 +191,7 @@ func registerAdminKandidatenRoutes(app *pocketbase.PocketBase) {
 				"geplant":        geplant,
 				"schnitt_gesamt": avg,
 			})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		return se.Next()
 	})

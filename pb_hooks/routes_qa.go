@@ -21,10 +21,13 @@ import (
 )
 
 func registerTestRoutes(app *pocketbase.PocketBase) {
-	statusPayload := func() map[string]any {
+	// statusPayload nimmt den eingeloggten mitarbeiter-Record entgegen, um die
+	// wirksame Rolle und einen ggf. aktiven QA-Rollen-Override zu melden (damit
+	// der persistente QA-Balken den Reset-Button rollenunabhängig anzeigen kann).
+	statusPayload := func(auth *core.Record) map[string]any {
 		j := jetzt()
 		off := aktuellerOffsetSekunden()
-		return map[string]any{
+		p := map[string]any{
 			"test_mode":       true,
 			"jetzt":           j.UTC().Format(time.RFC3339),
 			"jetzt_berlin":    j.In(berlinLoc()).Format("2006-01-02 15:04"),
@@ -32,6 +35,13 @@ func registerTestRoutes(app *pocketbase.PocketBase) {
 			"offset_sekunden": off,
 			"aktiv":           off != 0,
 		}
+		if auth != nil {
+			original := auth.GetString("qa_rolle_original")
+			p["rolle"] = auth.GetString("rolle")
+			p["qa_rolle_original"] = original
+			p["rolle_override_aktiv"] = original != ""
+		}
+		return p
 	}
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
@@ -45,7 +55,7 @@ func registerTestRoutes(app *pocketbase.PocketBase) {
 			if e.Auth == nil || e.Auth.Collection().Name != "mitarbeiter" {
 				return apis.NewUnauthorizedError("", nil)
 			}
-			return e.JSON(http.StatusOK, statusPayload())
+			return e.JSON(http.StatusOK, statusPayload(e.Auth))
 		})
 
 		if testModeAktiv() {
@@ -81,7 +91,60 @@ func registerTestRoutes(app *pocketbase.PocketBase) {
 				default:
 					return apis.NewBadRequestError("Bitte datum, iso oder reset angeben.", nil)
 				}
-				return e.JSON(http.StatusOK, statusPayload())
+				return e.JSON(http.StatusOK, statusPayload(e.Auth))
+			}).Bind(auth)
+
+			// POST /api/test/rolle — eigene wirksame Rolle temporär umschalten
+			// (QA-Rollen-Override). Schreibt die rolle direkt im DB-Record um und
+			// sichert die echte Rolle einmalig in qa_rolle_original. Da die Rules
+			// @request.auth.rolle aus dem Record lesen, greift der Override überall
+			// (Frontend + Collection-Rules + Route-Guards). saveWithSystemContext
+			// umgeht die neue istLeitung-UpdateRule bewusst.
+			// KEIN requireRolle-Guard — sonst könnte man sich als "auskunft" nicht
+			// mehr selbst zurückschalten.
+			se.Router.POST("/api/test/rolle", func(e *core.RequestEvent) error {
+				var body struct {
+					Rolle string `json:"rolle"`
+				}
+				if err := e.BindBody(&body); err != nil {
+					return apis.NewBadRequestError("Ungültige Anfrage.", nil)
+				}
+				switch body.Rolle {
+				case "leitung", "mitarbeiter", "auskunft":
+					// ok
+				default:
+					return apis.NewBadRequestError("Unbekannte Rolle.", nil)
+				}
+				rec := e.Auth
+				if rec == nil {
+					return apis.NewUnauthorizedError("", nil)
+				}
+				// Original nur beim ersten Umschalten sichern.
+				if rec.GetString("qa_rolle_original") == "" {
+					rec.Set("qa_rolle_original", rec.GetString("rolle"))
+				}
+				rec.Set("rolle", body.Rolle)
+				if err := saveWithSystemContext(app, rec); err != nil {
+					return apis.NewApiError(http.StatusInternalServerError, "Rolle konnte nicht gesetzt werden.", nil)
+				}
+				return e.JSON(http.StatusOK, statusPayload(rec))
+			}).Bind(auth)
+
+			// POST /api/test/rolle/reset — wirksame Rolle auf die echte
+			// zurücksetzen. MUSS immer erreichbar sein (auch als "auskunft").
+			se.Router.POST("/api/test/rolle/reset", func(e *core.RequestEvent) error {
+				rec := e.Auth
+				if rec == nil {
+					return apis.NewUnauthorizedError("", nil)
+				}
+				if original := rec.GetString("qa_rolle_original"); original != "" {
+					rec.Set("rolle", original)
+					rec.Set("qa_rolle_original", "")
+					if err := saveWithSystemContext(app, rec); err != nil {
+						return apis.NewApiError(http.StatusInternalServerError, "Rolle konnte nicht zurückgesetzt werden.", nil)
+					}
+				}
+				return e.JSON(http.StatusOK, statusPayload(rec))
 			}).Bind(auth)
 
 			// POST /api/test/seed — Testdaten erzeugen.

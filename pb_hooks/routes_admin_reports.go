@@ -32,6 +32,7 @@ func zeitbereichUTC(vonStr, bisStr string) (string, string, bool) {
 func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
+		personal := requireRolle("mitarbeiter", "leitung")
 
 		// ---- Herkunft --------------------------------------------------
 		se.Router.GET("/api/admin/reports/herkunft", func(e *core.RequestEvent) error {
@@ -77,7 +78,7 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 				return apis.NewApiError(http.StatusInternalServerError, "Auswertung fehlgeschlagen.", nil)
 			}
 			return e.JSON(http.StatusOK, map[string]any{"gruppen": rows})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Soll/Ist --------------------------------------------------
 		se.Router.GET("/api/admin/reports/soll-ist", func(e *core.RequestEvent) error {
@@ -126,7 +127,7 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 				"teilnehmer_pro_monat": teilnehmer,
 				"referenten":           referenten,
 			})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Referenten-Auslastung -------------------------------------
 		se.Router.GET("/api/admin/reports/referenten-auslastung", func(e *core.RequestEvent) error {
@@ -178,7 +179,7 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 				})
 			}
 			return e.JSON(http.StatusOK, map[string]any{"referenten": result})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		return se.Next()
 	})

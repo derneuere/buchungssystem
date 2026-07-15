@@ -9,6 +9,7 @@ import { ExternalLink } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
 import type { Referent } from '@/lib/types'
+import { istLeitung, useRolle } from '@/lib/use-rolle'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -22,6 +23,7 @@ export const Route = createFileRoute('/admin/_authenticated/verfuegbarkeiten')({
 })
 
 function VerfuegbarkeitenPage() {
+  const nurLesen = !istLeitung(useRolle())
   const referentenQuery = useQuery({
     queryKey: ['admin', 'referenten', 'alle'],
     queryFn: () => pb.collection('referenten').getFullList<Referent>({ sort: 'name' }),
@@ -77,7 +79,7 @@ function VerfuegbarkeitenPage() {
                   </Link>
                 </Button>
               </div>
-              <VerfuegbarkeitenManager referentId={referentId} />
+              <VerfuegbarkeitenManager referentId={referentId} nurLesen={nurLesen} />
             </div>
           ) : (
             <p className="border-t pt-4 text-sm text-muted-foreground">

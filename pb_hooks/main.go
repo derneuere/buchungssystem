@@ -40,6 +40,8 @@ func main() {
 	registerAdminBuchungManuell(app)   // routes_admin_buchung_manuell.go — manuelle Erfassung
 	registerAdminKandidatenRoutes(app) // routes_admin_kandidaten.go — Referenten-Kandidaten + Kennzahlen
 	registerAdminReportRoutes(app)     // routes_admin_reports.go
+	registerAdminIstRoute(app)         // routes_admin_ist.go — feld-whitelistende Ist-Erfassung (alle Rollen)
+	registerAuskunftRoutes(app)        // routes_auskunft.go — projizierte Read-Ansicht für auskunft
 	registerMitarbeiterRoutes(app)     // routes_mitarbeiter.go — Einladungs-Flow
 	registerMailHooks(app)             // hooks_mail.go — buchungen create-guard
 	registerCron(app)                  // cron.go — Verfall-Job

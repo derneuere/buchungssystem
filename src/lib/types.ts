@@ -13,7 +13,7 @@ export interface BaseRecord {
 
 // ---- Enums / feste Wertelisten -------------------------------------------
 
-export type Rolle = 'mitarbeiter' | 'leitung'
+export type Rolle = 'mitarbeiter' | 'leitung' | 'auskunft'
 
 export type BuchungStatus =
   | 'angefragt'
@@ -414,6 +414,47 @@ export interface TestStatus {
   echt_jetzt: string // ISO UTC
   offset_sekunden: number
   aktiv: boolean // offset_sekunden != 0 → simuliertes Datum aktiv
+  // QA-Rollen-Override (nur gesetzt, wenn ein mitarbeiter-Record vorliegt):
+  rolle?: Rolle // wirksame (ggf. simulierte) Rolle
+  qa_rolle_original?: string // echte Rolle während eines Override, sonst ""
+  rolle_override_aktiv?: boolean // true, solange ein Override aktiv ist
+}
+
+// ---- Auskunfts-Ansicht (projizierte Read-Routen) --------------------------
+
+// GET /api/auskunft/buchungen -> AuskunftBuchung[]
+export interface AuskunftBuchung {
+  id: string
+  status: BuchungStatus
+  start: string // ISO UTC
+  ende: string // ISO UTC
+  angebotsart: string // Name
+  thema: string // Name
+  raum: string | null // Name oder null
+  teilnehmer_geplant: number
+  teilnehmer_ist: number
+  kontakt_name: string
+  kontakt_telefon: string
+}
+
+export interface AuskunftReferent {
+  zuordnung_id: string
+  geplant: boolean
+  eingesetzt: boolean
+  referent: { name: string; telefon: string }
+}
+
+// GET /api/auskunft/buchungen/{id}
+export interface AuskunftBuchungDetail extends AuskunftBuchung {
+  referenten: AuskunftReferent[]
+}
+
+// POST /api/admin/buchungen/{id}/ist
+export interface IstErfassungInput {
+  teilnehmer_ist?: number
+  durchgefuehrt?: boolean
+  eingesetzt?: { zuordnung_id: string; eingesetzt: boolean }[]
+  spontane_vertretung?: { referent_id: string }[]
 }
 
 // POST /api/test/seed, POST /api/test/reset

@@ -19,6 +19,8 @@ import (
 func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
+		// Buchungs-Workflow ist Personal-vorbehalten (auskunft ausgeschlossen).
+		personal := requireRolle("mitarbeiter", "leitung")
 
 		// ---- Vorschlag -------------------------------------------------
 		se.Router.POST("/api/admin/buchungen/{id}/vorschlag", func(e *core.RequestEvent) error {
@@ -43,7 +45,7 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 				return apis.NewApiError(http.StatusInternalServerError, "Snapshot konnte nicht gespeichert werden.", nil)
 			}
 			return e.JSON(http.StatusOK, res)
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Referent live prüfen --------------------------------------
 		se.Router.POST("/api/admin/buchungen/{id}/referenten/pruefe", func(e *core.RequestEvent) error {
@@ -91,7 +93,7 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 				"themaMatch": themaMatch,
 				"warnstufe":  warnstufe,
 			})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Bestätigen ------------------------------------------------
 		se.Router.POST("/api/admin/buchungen/{id}/bestaetigen", func(e *core.RequestEvent) error {
@@ -196,7 +198,7 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 			}
 			sendZusage(app, b)
 			return e.JSON(http.StatusOK, map[string]any{"id": b.Id, "status": "bestaetigt", "unterbesetzt": unterbesetzt, "raum_offen": raumOffen})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Ablehnen --------------------------------------------------
 		se.Router.POST("/api/admin/buchungen/{id}/ablehnen", func(e *core.RequestEvent) error {
@@ -217,7 +219,7 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 			}
 			sendAbsage(app, b, sanitize(body.Grund, 2000), body.GrundAnKundeSenden)
 			return e.JSON(http.StatusOK, map[string]any{"id": b.Id, "status": "abgelehnt"})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		// ---- Stornieren ------------------------------------------------
 		se.Router.POST("/api/admin/buchungen/{id}/stornieren", func(e *core.RequestEvent) error {
@@ -237,7 +239,7 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 				return apis.NewApiError(http.StatusInternalServerError, "Stornierung konnte nicht gespeichert werden.", nil)
 			}
 			return e.JSON(http.StatusOK, map[string]any{"id": b.Id, "status": "storniert"})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(personal)
 
 		return se.Next()
 	})

@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { pb } from '@/lib/pocketbase'
 import type { Referent, Thema } from '@/lib/types'
 import { getDeleteErrorMessage, getErrorMessage } from '@/lib/admin-errors'
+import { istLeitung, useRolle } from '@/lib/use-rolle'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -35,6 +36,7 @@ type ReferentMitThemen = Referent & { expand?: { themen?: Thema[] } }
 function ReferentenListPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const darfBearbeiten = istLeitung(useRolle())
 
   const query = useQuery({
     queryKey: QUERY_KEY,
@@ -95,10 +97,12 @@ function ReferentenListPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Referent:innen</h1>
           <p className="text-sm text-muted-foreground">Stammdaten, Themenkompetenzen und Verfügbarkeiten.</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Neue:r Referent:in
-        </Button>
+        {darfBearbeiten && (
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Neue:r Referent:in
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -160,23 +164,31 @@ function ReferentenListPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <button type="button" onClick={() => handleToggleAktiv(referent)}>
-                        <Badge variant={referent.aktiv ? 'default' : 'secondary'} className="cursor-pointer">
+                      {darfBearbeiten ? (
+                        <button type="button" onClick={() => handleToggleAktiv(referent)}>
+                          <Badge variant={referent.aktiv ? 'default' : 'secondary'} className="cursor-pointer">
+                            {referent.aktiv ? 'Aktiv' : 'Inaktiv'}
+                          </Badge>
+                        </button>
+                      ) : (
+                        <Badge variant={referent.aktiv ? 'default' : 'secondary'}>
                           {referent.aktiv ? 'Aktiv' : 'Inaktiv'}
                         </Badge>
-                      </button>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <ConfirmDeleteDialog
-                        trigger={
-                          <Button variant="ghost" size="icon" aria-label="Löschen">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        }
-                        title={`„${referent.name}" löschen?`}
-                        description="Falls die Person noch in Buchungen oder Verfügbarkeiten referenziert wird, schlägt das Löschen fehl — dann bitte stattdessen deaktivieren."
-                        onConfirm={() => handleDelete(referent)}
-                      />
+                      {darfBearbeiten && (
+                        <ConfirmDeleteDialog
+                          trigger={
+                            <Button variant="ghost" size="icon" aria-label="Löschen">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          }
+                          title={`„${referent.name}" löschen?`}
+                          description="Falls die Person noch in Buchungen oder Verfügbarkeiten referenziert wird, schlägt das Löschen fehl — dann bitte stattdessen deaktivieren."
+                          onConfirm={() => handleDelete(referent)}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
                 )

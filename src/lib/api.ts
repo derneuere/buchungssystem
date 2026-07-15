@@ -1,12 +1,16 @@
 import { pb } from './pocketbase'
 import type {
   AdminBuchungInput,
+  AuskunftBuchung,
+  AuskunftBuchungDetail,
   BuchungsanfrageInput,
   BuchungsanfrageResponse,
   HerkunftReportZeile,
+  IstErfassungInput,
   KandidatenResult,
   PruefeResult,
   ReferentenAuslastungZeile,
+  Rolle,
   SlotsResponse,
   SollIstReport,
   TagStatus,
@@ -112,6 +116,34 @@ export function adminBuchungAnlegen(
   return pb.send('/api/admin/buchungen', { method: 'POST', body })
 }
 
+/**
+ * Feld-whitelistende Ist-Erfassung (alle drei Rollen). Ersetzt die früheren
+ * Direkt-Writes auf buchungen/buchung_referenten. Setzt ausschließlich
+ * teilnehmer_ist, status→durchgefuehrt sowie eingesetzt-Toggles/spontane
+ * Vertretungen.
+ */
+export function adminIstErfassung(
+  buchungId: string,
+  body: IstErfassungInput,
+): Promise<{ ok: true }> {
+  return pb.send(`/api/admin/buchungen/${buchungId}/ist`, { method: 'POST', body })
+}
+
+// ---- Auskunft: projizierte Read-Ansicht ----------------------------------
+// Serverseitig auf status IN (bestaetigt, durchgefuehrt) gefiltert und auf die
+// erlaubten Felder projiziert (keine E-Mail/Herkunft/Nachricht/Notizen).
+
+export function auskunftBuchungen(params?: {
+  von?: string
+  bis?: string
+}): Promise<AuskunftBuchung[]> {
+  return pb.send('/api/auskunft/buchungen', { method: 'GET', query: params ?? {} })
+}
+
+export function auskunftBuchung(id: string): Promise<AuskunftBuchungDetail> {
+  return pb.send(`/api/auskunft/buchungen/${id}`, { method: 'GET' })
+}
+
 // ---- Admin: Reports -------------------------------------------------------
 
 export function reportHerkunft(params: {
@@ -146,7 +178,7 @@ export function reportReferentenAuslastung(params: {
 
 export function mitarbeiterEinladen(body: {
   email: string
-  rolle: 'mitarbeiter' | 'leitung'
+  rolle: Rolle
 }): Promise<{ id: string; email: string; rolle: string; link: string }> {
   return pb.send('/api/admin/mitarbeiter/einladen', { method: 'POST', body })
 }
@@ -194,4 +226,14 @@ export function testReset(): Promise<TestDatenZaehler> {
 
 export function testVerfall(): Promise<{ verfallen: number }> {
   return pb.send('/api/test/cron/verfall', { method: 'POST' })
+}
+
+/** QA-Rollen-Override: eigene wirksame Rolle temporär umschalten. */
+export function testSetRolle(rolle: Rolle): Promise<TestStatus> {
+  return pb.send('/api/test/rolle', { method: 'POST', body: { rolle } })
+}
+
+/** QA-Rollen-Override zurücksetzen (immer erreichbar, auch als auskunft). */
+export function testResetRolle(): Promise<TestStatus> {
+  return pb.send('/api/test/rolle/reset', { method: 'POST' })
 }

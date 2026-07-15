@@ -44,6 +44,8 @@ func registerMitarbeiterRoutes(app *pocketbase.PocketBase) {
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		auth := apis.RequireAuth("mitarbeiter")
+		// Mitarbeiter-Verwaltung (Einladen) ist ausschließlich der Leitung vorbehalten.
+		nurLeitung := requireRolle("leitung")
 
 		// ---- Admin: Mitarbeiter einladen -------------------------------
 		se.Router.POST("/api/admin/mitarbeiter/einladen", func(e *core.RequestEvent) error {
@@ -59,7 +61,10 @@ func registerMitarbeiterRoutes(app *pocketbase.PocketBase) {
 				return apis.NewBadRequestError("Bitte eine gültige E-Mail-Adresse angeben.", nil)
 			}
 			rolle := body.Rolle
-			if rolle != "leitung" {
+			switch rolle {
+			case "leitung", "mitarbeiter", "auskunft":
+				// erlaubte Einladungsrollen
+			default:
 				rolle = "mitarbeiter"
 			}
 
@@ -108,7 +113,7 @@ func registerMitarbeiterRoutes(app *pocketbase.PocketBase) {
 				"rolle": rolle,
 				"link":  link,
 			})
-		}).Bind(auth)
+		}).Bind(auth).BindFunc(nurLeitung)
 
 		// ---- Öffentlich: Einladung prüfen ------------------------------
 		se.Router.GET("/api/public/einladung", func(e *core.RequestEvent) error {

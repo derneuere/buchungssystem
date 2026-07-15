@@ -59,15 +59,37 @@ func TestMigrationsApply(t *testing.T) {
 	if buchungen.CreateRule != nil {
 		t.Fatalf("buchungen.createRule must be null, got %q", *buchungen.CreateRule)
 	}
-	// buchungen list rule must be staff-only.
-	if buchungen.ListRule == nil || *buchungen.ListRule != `@request.auth.id != ""` {
-		t.Fatalf("buchungen.listRule must be staff-only")
+	// buchungen list rule must exclude 'auskunft' after RBAC-Migration 0007
+	// (auskunft liest nur projiziert über /api/auskunft/*).
+	wantPersonal := `@request.auth.id != "" && @request.auth.rolle != "auskunft"`
+	if buchungen.ListRule == nil || *buchungen.ListRule != wantPersonal {
+		t.Fatalf("buchungen.listRule must be istPersonal, got %v", buchungen.ListRule)
 	}
 
-	// themen must be publicly readable when aktiv.
+	// Rein interne Collections + Personalverzeichnis müssen 'auskunft' auch per
+	// direkter REST-API vom Lesen ausschließen (List/View = istPersonal).
+	for _, name := range []string{"mitarbeiter", "einstellungen", "raeume", "schliesstage", "referenten", "verfuegbarkeiten", "buchung_referenten"} {
+		col, _ := app.FindCollectionByNameOrId(name)
+		if col.ListRule == nil || *col.ListRule != wantPersonal {
+			t.Fatalf("%s.listRule must be istPersonal, got %v", name, col.ListRule)
+		}
+		if col.ViewRule == nil || *col.ViewRule != wantPersonal {
+			t.Fatalf("%s.viewRule must be istPersonal, got %v", name, col.ViewRule)
+		}
+	}
+
+	// Öffentlich lesbare Stammdaten dürfen NICHT verschärft worden sein (das
+	// öffentliche Formular liest sie): themen/angebotsarten/einrichtungstypen.
+	const wantPublic = `aktiv = true || @request.auth.id != ""`
 	themen, _ := app.FindCollectionByNameOrId("themen")
-	if themen.ListRule == nil || *themen.ListRule != `aktiv = true || @request.auth.id != ""` {
+	if themen.ListRule == nil || *themen.ListRule != wantPublic {
 		t.Fatalf("themen.listRule must allow public active read")
+	}
+	for _, name := range []string{"angebotsarten", "einrichtungstypen"} {
+		col, _ := app.FindCollectionByNameOrId(name)
+		if col.ListRule == nil || *col.ListRule != wantPublic {
+			t.Fatalf("%s.listRule must stay public-active, got %v", name, col.ListRule)
+		}
 	}
 
 	// Seed: einstellungen singleton with the documented defaults.
