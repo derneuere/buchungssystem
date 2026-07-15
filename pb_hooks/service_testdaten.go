@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	testNamePrefix = "[Test]"   // referenten / raeume / Fallback-themen
+	testNamePrefix = "[Test]"     // referenten / raeume / Fallback-themen
 	testNotizMark  = "[TESTDATA]" // buchungen.interne_notiz
 )
 
@@ -437,6 +437,20 @@ func resetTestdaten(app core.App) (map[string]any, error) {
 			return err
 		}
 		for _, r := range referenten {
+			// Verbleibende Zuordnungen lösen. buchung_referenten.referent ist eine
+			// Pflicht-Relation OHNE CascadeDelete — solche Zeilen (z. B. an einer
+			// manuell erfassten Buchung ohne [TESTDATA]-Marker oder an einer im
+			// Test bestätigten Buchung) blockieren sonst das Löschen des Referenten.
+			zuordnungen, err := txApp.FindRecordsByFilter("buchung_referenten", "referent = {:r}", "", 0, 0, dbx.Params{"r": r.Id})
+			if err != nil {
+				return err
+			}
+			for _, z := range zuordnungen {
+				if err := txApp.Delete(z); err != nil {
+					return err
+				}
+				counts["buchung_referenten"] = counts["buchung_referenten"].(int) + 1
+			}
 			kinder, err := txApp.FindRecordsByFilter("verfuegbarkeiten", "referent = {:r}", "", 0, 0, dbx.Params{"r": r.Id})
 			if err != nil {
 				return err
