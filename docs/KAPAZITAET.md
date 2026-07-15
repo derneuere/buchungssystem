@@ -8,7 +8,10 @@ bewusstem Override zulassen und sichtbar kennzeichnen.
 ## Status- & Feldmodell (Migration `0004_kapazitaet.go`)
 
 - Neuer Status **`warteliste`** — Halte-Zustand, den der Verfall-Cron NICHT
-  anfasst (offen halten, ohne dass die Anfrage automatisch verfällt).
+  anfasst (offen halten, ohne dass die Anfrage automatisch verfällt). Das gilt
+  auch für den manuell auslösbaren Verfall-Lauf im Testmodus
+  (`POST /api/test/cron/verfall`, siehe `docs/SPEC.md` §4.9): er verwendet
+  denselben Job und lässt `warteliste` ebenfalls unangetastet.
 - **`unterbesetzt`** (bool): weniger geplante Referent:innen als benötigt.
 - **`raum_offen`** (bool): Angebot benötigt Raum, aber noch keiner vergeben
   (provisorisch bestätigt).
@@ -37,6 +40,13 @@ und ein Pflicht-Grund-Feld; „Trotzdem bestätigen" sendet `{trotzdem, grund}`.
 Bestätigte Buchungen mit Lücke zeigen im Detail/der Liste Badges **„Unterbesetzt"**
 bzw. **„Raum offen"**.
 
+> **Rollen-Hinweis (RBAC, Migration `0007`):** Bestätigen und „Trotzdem
+> bestätigen" sind **Personal-Aktionen** (Rollen `leitung`/`mitarbeiter`). Die
+> Rolle `auskunft` kann Buchungen weder bestätigen noch bearbeiten; sie sieht nur
+> bereits bestätigte/durchgeführte Termine und trägt den Ist-Zustand ein. Die
+> vollständige Rechte-Übersicht steht in `docs/BENUTZERHANDBUCH.md` Kap. 7.2 bzw.
+> der In-App-Hilfe.
+
 ## Auto-Zuordnung
 
 `SchlageReferentenVor` liefert Best-Effort inkl. Teil-Zuordnung, Alternativen,
@@ -46,7 +56,9 @@ Raumvorschlag und Warnungen — blockiert nie leer.
 
 Personal kann Buchungen selbst erfassen (weichere Prüfung als der öffentliche
 Weg: keine Verfügbarkeits-Sperre, aber valide Stammdaten). Kapazitätslücken
-werden erst beim Bestätigen als Warnung sichtbar.
+werden erst beim Bestätigen als Warnung sichtbar. Route implementiert in
+`pb_hooks/routes_admin_buchung_manuell.go`, Guard `requireRolle("mitarbeiter",
+"leitung")` — nur Personal, nicht `auskunft` (siehe `docs/SPEC.md` §4.7).
 
 ## Benötigte Referent:innen
 

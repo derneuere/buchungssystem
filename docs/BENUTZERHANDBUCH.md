@@ -4,6 +4,8 @@ Dieses Handbuch beschreibt die tägliche Arbeit mit dem Buchungssystem der Geden
 
 Sie finden hier Schritt-für-Schritt-Anleitungen für alle Bereiche: das öffentliche Buchungsformular, den Admin-Bereich, die Pflege der Stammdaten, die Auswertungen sowie die Einrichtung des Systems. Am Ende steht eine kurze FAQ mit den häufigsten Fragen aus dem Alltag.
 
+> **Zu diesem Handbuch:** Dies ist die **ausführliche Fassung**. Eine gestraffte, aufgabenorientierte Kurzform ist die **In-App-Hilfe** im Admin-Bereich unter `/admin/hilfe` (Quelle: `src/content/hilfe.md`). Beide Dokumente behandeln dieselben Themen; werden gemeinsame Inhalte (Rollen, Kapazität, Einbettung, Ist-Erfassung) geändert, sind sie **in beiden Dateien** zu pflegen. Die mit „Hintergrund für technisch Verantwortliche" gekennzeichneten Vertiefungen stehen bewusst nur in diesem Handbuch.
+
 > **Wichtiger Grundsatz für alle Anfragen:** Eine über das Formular eingegangene Buchung ist zunächst nur eine **unverbindliche Anfrage**. Verbindlich wird ein Termin erst, wenn Sie ihn im Admin-Bereich **bestätigen**.
 
 ---
@@ -20,6 +22,7 @@ Sie finden hier Schritt-für-Schritt-Anleitungen für alle Bereiche: das öffent
 8. [Das Formular in die Webseite einbetten (TYPO3)](#8-das-formular-in-die-webseite-einbetten-typo3)
 9. [Betrieb](#9-betrieb)
 10. [Häufige Fragen (FAQ)](#10-häufige-fragen-faq)
+11. [QA-/Testmodus (nur Test-/Schulungsumgebung)](#11-qa-testmodus-nur-test-schulungsumgebung)
 
 ---
 
@@ -106,6 +109,16 @@ Interessierte müssen also keinen Termin „auf Verdacht“ anfragen: Jede wähl
 
 > **Hinweis:** Das Formular ist im Hintergrund durch unsichtbaren Spam- und Missbrauchsschutz (Honeypot-Feld, Rate-Limit) abgesichert. Besucher:innen bemerken davon nichts – es ist kein Captcha oder Ähnliches nötig.
 
+### Sprache: Deutsch oder Englisch
+
+Das öffentliche Buchungsformular ist **zweisprachig (Deutsch/Englisch)**. Voreingestellt ist **Deutsch**.
+
+- Besucher:innen wechseln die Sprache über den **Sprachumschalter (DE/EN-Buttons)** im Formular.
+- Alternativ lässt sich die Sprache über den URL-Parameter **`?lang=en`** vorwählen (z. B. für die englische Einbettung, siehe [Abschnitt 8](#8-das-formular-in-die-webseite-einbetten-typo3)). Ohne Parameter bzw. bei unbekanntem Wert bleibt es bei Deutsch.
+- Für **Themen**, **Angebotsarten** und **Einrichtungstypen** können Sie optional englische Namen (und Beschreibungen) hinterlegen. Ist kein englischer Text gepflegt, wird automatisch der deutsche Text angezeigt (Fallback). Details in [Abschnitt 5](#5-stammdaten-pflegen).
+
+> **Hinweis:** Der Admin-Bereich selbst ist ausschließlich auf Deutsch; die Sprachwahl betrifft nur die öffentliche Buchungsstrecke.
+
 ---
 
 ## 3. Erste Schritte: Anmeldung im Admin-Bereich
@@ -122,9 +135,10 @@ Nach erfolgreicher Anmeldung gelangen Sie zum **Dashboard**. Die Navigation find
 
 Das Dashboard gibt Ihnen einen schnellen Überblick über den aktuellen Stand:
 
-- **Kennzahlen (KPIs):** Anzahl offener Anfragen, kommende Termine der nächsten 7 Tage, Auslastung der laufenden Woche.
+- **Kennzahlen (KPIs):** Anzahl offener Anfragen, kommende Termine der nächsten 7 Tage, Auslastung der laufenden Woche sowie **offene Ist-Erfassungen**.
 - **Neue Anfragen:** Liste der zuletzt eingegangenen Buchungsanfragen mit Schnellaktionen, damit Sie direkt reagieren können, ohne erst in die Detailansicht zu wechseln.
 - **Nächste Termine:** Übersicht der anstehenden bestätigten Termine.
+- **Offene Ist-Erfassungen:** Liste der **bestätigten** Termine, deren Termintag bereits erreicht oder vorüber ist, die aber noch **nicht als „durchgeführt" erfasst** wurden. Diese Kachel ist Ihr **Arbeitsvorrat** für die Nacherfassung: Jeder Eintrag verlinkt direkt in die Buchungsdetailansicht, wo Sie die Ist-Daten nachtragen. Sind alle fälligen Termine erfasst, ist die Liste leer.
 
 ---
 
@@ -174,12 +188,17 @@ Die Detailansicht gliedert sich in drei Bereiche:
 3. Sie können Referent:innen auch **manuell hinzufügen** oder **entfernen**. Beim manuellen Hinzufügen prüft das System **live auf Konflikte** (z. B. Terminüberschneidungen). Liegt eine **harte Doppelbelegung** vor, müssen Sie dies ausdrücklich bestätigen, bevor die Zuweisung übernommen wird.
 4. Die **Bedarfs-Anzeige** zeigt jederzeit den Planungsstand im Format **„x von y“** (zugewiesene von benötigten Referent:innen).
 
-**c) Ist-Erfassung** (ab dem Termindatum) – hier halten Sie fest, wie der Termin tatsächlich abgelaufen ist:
+**c) Ist-Erfassung** – hier halten Sie fest, wie der Termin tatsächlich abgelaufen ist.
 
-- Kreuzen Sie an, welche Referent:innen **tatsächlich eingesetzt** wurden.
-- Tragen Sie die **tatsächliche Teilnehmerzahl** ein.
+Die Ist-Erfassung ist **immer sichtbar**, vor dem Termin aber **ausgegraut und gesperrt** (mit dem Hinweis, ab wann sie freigeschaltet wird). Die Freischaltung ist **tagesbasiert**: Sie können ab dem **Termintag** erfassen – nicht erst ab der Uhrzeit des Termins. Technisch gilt: die Erfassung ist frei, sobald die Buchung bereits `durchgeführt` ist **oder** der heutige Tag den Termintag erreicht bzw. überschritten hat.
 
-Zusätzlich stehen Felder für **interne Notizen** und eine **Planungsnotiz** zur Verfügung.
+Sobald freigeschaltet, stehen folgende Aktionen zur Verfügung:
+
+- **Häkchen „eingesetzt"** je Referent:in – kreuzen Sie an, wer **tatsächlich im Einsatz** war.
+- **Spontane Vertretung erfassen** – eine nicht geplante Person nachträglich als eingesetzt hinzufügen.
+- **Teilnehmer:innen (Ist)** – die **tatsächliche Teilnehmerzahl** eintragen und **Speichern**.
+- **Als durchgeführt markieren** – schließt den Termin ab (Status wird `durchgeführt`) und übernimmt die eingetragene Ist-Teilnehmerzahl.
+- **Niemand erschienen** – Kurzweg für No-Show: setzt die Ist-Teilnehmerzahl auf 0, alle Zuordnungen auf „nicht eingesetzt" und markiert den Termin als durchgeführt.
 
 ### 4.4 Buchungs-Aktionen
 
@@ -192,7 +211,7 @@ Je nach Status stehen Ihnen folgende Aktionen zur Verfügung:
 
 ### 4.5 Kapazitätshandling: Unterbesetzung, „Raum offen“ und „Trotzdem bestätigen“
 
-Dies ist der wichtigste Punkt beim Bestätigen einer Buchung.
+Dies ist der wichtigste Punkt beim Bestätigen einer Buchung. Die zugrunde liegenden Entscheidungen sind in **`docs/KAPAZITAET.md`** dokumentiert. Bestätigen (inkl. „Trotzdem bestätigen") ist eine **Personal-Aktion** – die Rolle **Auskunftsassistenz** kann Buchungen nicht bestätigen.
 
 **Grundprinzip:** Das System blockiert die Bestätigung **nur dann hart**, wenn ein konkret **gewählter Raum** zum gewünschten Termin bereits belegt ist. In allen anderen kritischen Fällen erhalten Sie lediglich eine **Warnung** und können die Buchung trotzdem bestätigen.
 
@@ -262,7 +281,8 @@ Themen sind die inhaltlichen Angebote (Kompetenzen), die Referent:innen zugeordn
 
 1. Seitenleiste → **Themen**.
 2. **Neues Thema** anlegen, benennen und speichern.
-3. Bestehende Themen können Sie bearbeiten oder löschen. Ein gelöschtes Thema steht im öffentlichen Formular nicht mehr zur Auswahl und muss bei betroffenen Referent:innen ggf. neu zugeordnet werden.
+3. Optional können Sie einen **englischen Namen (`name_en`)** und eine **englische Beschreibung (`beschreibung_en`)** hinterlegen. Diese erscheinen im öffentlichen Formular, wenn Besucher:innen Englisch wählen. Bleiben die Felder leer, wird automatisch der deutsche Text angezeigt (Fallback).
+4. Bestehende Themen können Sie bearbeiten oder löschen. Ein gelöschtes Thema steht im öffentlichen Formular nicht mehr zur Auswahl und muss bei betroffenen Referent:innen ggf. neu zugeordnet werden.
 
 ### 5.4 Räume
 
@@ -292,8 +312,9 @@ Angebotsarten definieren die Rahmenbedingungen von Führung und Seminar:
 2. **Neue Angebotsart** anlegen oder eine bestehende (Führung/Seminar) öffnen.
 3. Alle Felder aus der Tabelle ausfüllen bzw. anpassen.
 4. Zeitslots als Liste möglicher Startzeiten hinterlegen (z. B. 09:00, 11:00, 14:00).
-5. Über **Aktiv** eine Angebotsart vorübergehend aus dem öffentlichen Formular nehmen, ohne sie zu löschen.
-6. Speichern.
+5. Optional einen **englischen Namen (`name_en`)** und eine **englische Beschreibung (`beschreibung_en`)** hinterlegen; leer ⇒ Fallback auf den deutschen Text.
+6. Über **Aktiv** eine Angebotsart vorübergehend aus dem öffentlichen Formular nehmen, ohne sie zu löschen.
+7. Speichern.
 
 Aus „Min. Referenten“ und „Betreuungsschlüssel“ errechnet das System die **benötigte Anzahl Referent:innen** je Buchung (siehe Formel in [Abschnitt 1](#1-überblick-über-das-system)).
 
@@ -303,7 +324,10 @@ Einrichtungstypen (z. B. Schule, Universität, Verein) stehen Besucher:innen im 
 
 1. Seitenleiste → **Einrichtungstypen**.
 2. **Neuer Einrichtungstyp** anlegen, benennen, speichern.
-3. Bearbeiten/Löschen wie bei den anderen Stammdatenlisten.
+3. Optional einen **englischen Namen (`name_en`)** hinterlegen (leer ⇒ Fallback auf Deutsch). Einrichtungstypen haben – anders als Themen und Angebotsarten – **keine** englische Beschreibung, nur einen englischen Namen.
+4. Bearbeiten/Löschen wie bei den anderen Stammdatenlisten.
+
+> **Hinweis:** Englische Bezeichner gibt es ausschließlich für diese drei Stammdaten-Collections (**Themen**, **Angebotsarten**, **Einrichtungstypen**). Alle übrigen Stammdaten sind einsprachig deutsch.
 
 ### 5.7 Schließtage
 
@@ -360,14 +384,54 @@ Das System unterscheidet strikt zwischen zwei Zugängen:
 
 Der Superuser-Zugang unter `/_/` ist **nicht für den Alltag gedacht**. Für die normale Büroarbeit melden Sie sich immer unter `/admin/login` mit Ihrem Mitarbeiter-Konto an.
 
-### 7.2 Rollen: „mitarbeiter“ und „leitung“
+### 7.2 Rollen: Leitung, Mitarbeiter und Auskunftsassistenz
 
-Jedes Mitarbeiter-Konto besitzt eine Rolle:
+Jedes Mitarbeiter-Konto besitzt genau **eine** von **drei** Rollen. Sie steuert, welche Bereiche und Aktionen im Admin-Bereich verfügbar sind:
 
-- **mitarbeiter** – die Standardrolle für alle, die Buchungen bearbeiten, Referent:innen einplanen und Stammdaten pflegen.
-- **leitung** – dieselbe Funktionalität mit dem organisatorischen Zusatzstatus „Leitung“.
+- **Leitung** (`leitung`) – voller Zugriff auf alle Funktionen inklusive der Verwaltung von Referent:innen, Verfügbarkeiten und Mitarbeitenden.
+- **Mitarbeiter** (`mitarbeiter`) – der tägliche Arbeitsbereich: Buchungen bearbeiten, planen, bestätigen, Stammdaten und Auswertungen. Referent:innen und Verfügbarkeiten kann diese Rolle **einsehen, aber nicht ändern**; Mitarbeitende einladen kann sie nicht.
+- **Auskunftsassistenz** (`auskunft`) – bewusst stark eingeschränkte Rolle für den **Empfang/Schalter**. Sieht ausschließlich eine **schlanke Ansicht** der relevanten Termine und trägt den **Ist-Zustand** ein (siehe unten).
 
-Beide Rollen können sich aktuell **gleichermaßen** in den Admin-Bereich einloggen und alle dort vorhandenen Funktionen nutzen. Die Rolle ist derzeit vor allem eine organisatorische Kennzeichnung und die Grundlage für später feiner abgestufte Rechte – es gibt aktuell keine Funktionen, die ausschließlich der Leitung vorbehalten sind.
+#### Rechte-Übersicht
+
+| Bereich | Leitung | Mitarbeiter | Auskunftsassistenz |
+|---|:---:|:---:|:---:|
+| Dashboard, Auswertungen | ✓ | ✓ | – |
+| Buchungen sehen/bearbeiten (volle Detailsicht) | ✓ | ✓ | – (nur schlanke Sicht) |
+| Neue Buchung manuell erfassen | ✓ | ✓ | – |
+| Ist-Erfassung eintragen | ✓ | ✓ | ✓ (nur bestätigte/durchgeführte) |
+| Stammdaten Themen/Räume/Angebotsarten/Einrichtungstypen/Schließtage | ✓ | ✓ | – |
+| **Referenten anlegen/ändern/löschen** | ✓ | nur lesen | – |
+| **Verfügbarkeiten anlegen/ändern/löschen** | ✓ | nur lesen | – |
+| **Mitarbeitende einladen/verwalten** | ✓ | – | – |
+| Einstellungen, Einbetten | ✓ | ✓ | – |
+
+#### Die Rolle „Auskunftsassistenz" im Detail
+
+Diese Rolle ist für Personen am Empfang gedacht, die Gruppen begrüßen und den Verlauf dokumentieren, ohne Zugriff auf sensible Daten zu erhalten. Konkret:
+
+- Sie sieht **nur** Buchungen mit Status **bestätigt** oder **durchgeführt** – in einer **schlanken Detailansicht** mit: Angebotsart, Thema, Termin, Raum, Gruppengröße, **Kontakt-Name + Telefon** sowie den zugewiesenen **Referent:innen mit Name + Telefon**.
+- Sie trägt den **Ist-Zustand** ein (wer war eingesetzt, tatsächliche Teilnehmerzahl, „durchgeführt").
+- Sie hat **keinen** Zugriff auf E-Mail-Adressen, Herkunft, die Nachricht der Anfrage, interne Notizen, das Dashboard, die Auswertungen, die Stammdaten oder die Verwaltung.
+
+> **Wichtig:** Diese Einschränkung ist **serverseitig** durchgesetzt – nicht nur durch ausgeblendete Menüpunkte. Die schlanke Sicht wird über eine eigene, projizierende Schnittstelle geliefert, die sensible Felder gar nicht erst herausgibt. Ein Umgehen über den Browser oder direkte API-Aufrufe ist damit nicht möglich.
+
+#### Hintergrund für technisch Verantwortliche: die drei Durchsetzungsebenen
+
+Die Rechte-Matrix ist mit der Migration `0007_rbac_auskunft.go` verbindlich gesetzt und wird auf **drei** einander ergänzenden Ebenen durchgesetzt. Reines Ausblenden im Frontend genügt nicht – jede Ebene hält für sich dicht:
+
+1. **Collection-Regeln (PocketBase Access-Rules).** Der direkte Datenbankzugriff über die Standard-REST-API ist pro Collection geregelt. Zwei Bausteine tragen die Matrix:
+   - `istPersonal` = angemeldet **und** Rolle **nicht** `auskunft` (also Leitung + Mitarbeiter),
+   - `istLeitung` = angemeldet **und** Rolle `leitung`.
+
+   Damit gilt u. a.: `referenten` und `verfuegbarkeiten` sind für Personal **lesbar** (List/View = `istPersonal`), aber nur die **Leitung** darf sie anlegen/ändern/löschen (C/U/D = `istLeitung`). Für `mitarbeiter` gilt: List/View = `istPersonal`, **Update nur Leitung** (schließt die frühere Möglichkeit, die eigene Rolle hochzustufen), **Delete nur Leitung und nie das eigene Konto**. `buchungen`/`buchung_referenten` sind für Personal les- und schreibbar, für `auskunft` **gesperrt** – Buchungen anlegen bleibt ohnehin der Custom-Route vorbehalten. Die übrigen Stammdaten (`themen`, `angebotsarten`, `einrichtungstypen`, `raeume`, `schliesstage`, `einstellungen`) sind für Personal pflegbar, für `auskunft` gesperrt.
+
+2. **Route-Guards (Custom-Go-Routen).** Die serverseitigen Aktions-Routen sind zusätzlich nach der Anmeldung mit einer Rollen-Prüfung (`requireRolle`) abgesichert, die bei fehlender Berechtigung mit **403** abweist:
+   - Buchungen bearbeiten, manuelle Erfassung, Auswertungen, Referenten-Kandidaten → **Mitarbeiter + Leitung**,
+   - Mitarbeitende einladen → **nur Leitung**,
+   - Ist-Erfassung → **alle drei Rollen** (auch Auskunftsassistenz).
+
+3. **Projizierende Auskunfts-Schnittstelle.** Weil eine Zeilen-Regel keine einzelnen **Felder** verbergen kann, liest die Auskunftsassistenz die Buchungen **nicht** direkt, sondern über eine eigene Schnittstelle, die serverseitig hart auf Status **bestätigt/durchgeführt** filtert und **nur** die erlaubten Felder zurückgibt (Angebotsart, Thema, Termin, Raum, Gruppengröße, Kontakt-Name + Telefon, Referent:innen mit Name + Telefon). E-Mail, Herkunft, Nachricht und Notizen werden nie ausgeliefert. Ihre Ist-Einträge schreibt die Auskunftsassistenz ebenfalls nur über eine **feld-begrenzte** Route, die ausschließlich die Ist-Felder (`eingesetzt`, `teilnehmer_ist`, Abschluss `durchgeführt`) berührt.
 
 ### 7.3 Ersteinrichtung des Systems
 
@@ -381,9 +445,13 @@ Bei der ersten Inbetriebnahme ist noch kein Mitarbeiter-Konto vorhanden. Gehen S
 
 Sobald mindestens ein Mitarbeiter-Konto existiert, laden Sie neue Kolleg:innen bequem über den Admin-Bereich ein – ein Superuser-Zugriff ist dafür nicht mehr nötig.
 
+> **Nur die Leitung darf einladen und verwalten.** Der Menüpunkt **„Mitarbeiter"** ist ausschließlich für die Rolle **Leitung** sichtbar und die Einladung serverseitig auf diese Rolle beschränkt.
+
 1. Öffnen Sie in der Seitenleiste den Menüpunkt **„Mitarbeiter“** (`/admin/mitarbeiter`).
 2. Klicken Sie auf die Funktion zum Einladen eines neuen Mitarbeiters / einer neuen Mitarbeiterin.
-3. Geben Sie die **E-Mail-Adresse** ein und wählen Sie die gewünschte **Rolle** (mitarbeiter oder leitung).
+3. Geben Sie die **E-Mail-Adresse** ein und wählen Sie die gewünschte **Rolle**. Zur Auswahl stehen **Mitarbeiter**, **Leitung** und **Auskunftsassistenz (nur Schalter)**.
+
+> **Hinweis zur Anmeldung:** E-Mail-Adressen werden **ohne Rücksicht auf Groß-/Kleinschreibung** behandelt (intern in Kleinbuchstaben gespeichert). Beim Login ist es also egal, ob die Adresse groß oder klein eingegeben wird.
 4. Bestätigen Sie die Einladung. Das System legt daraufhin ein **inaktives Konto** an.
 5. Ist SMTP konfiguriert (siehe [Abschnitt 9](#9-betrieb)), verschickt das System automatisch eine Einladungs-E-Mail. Zusätzlich wird Ihnen der **Einladungslink direkt im Admin-Bereich angezeigt** – so können Sie ihn auch manuell weitergeben (z. B. wenn noch kein SMTP eingerichtet ist). Der Link ist **7 Tage** gültig.
 
@@ -399,7 +467,11 @@ Sobald mindestens ein Mitarbeiter-Konto existiert, laden Sie neue Kolleg:innen b
 
 ## 8. Das Formular in die Webseite einbetten (TYPO3)
 
-Damit Interessierte das Buchungsformular direkt auf einer Seite der Gedenkstätten-Website nutzen können, lässt es sich in TYPO3 einbetten. Die passenden, kopierbaren Code-Bausteine finden technisch Verantwortliche im Admin-Bereich unter **Einbetten** (`/admin/einbetten`). Dort werden beide Varianten angezeigt.
+Damit Interessierte das Buchungsformular direkt auf einer Seite der Gedenkstätten-Website nutzen können, lässt es sich in TYPO3 einbetten. Die passenden, kopierbaren Code-Bausteine finden technisch Verantwortliche im Admin-Bereich unter **Einbetten** (`/admin/einbetten`). Dort werden beide Varianten – jeweils für **Deutsch und Englisch** – angezeigt, sodass Sie nichts von Hand zusammenbauen müssen.
+
+> Eine ausführliche technische Anleitung mit allen Optionen und Voraussetzungen steht in **`docs/EINBETTUNG.md`**.
+
+Beide Varianten binden dieselbe chromelose Formular-Route **`/embed`** ein (für Englisch **`/embed?lang=en`**).
 
 ### Variante 1 (empfohlen): Lade-Skript
 
@@ -408,6 +480,7 @@ Diese Variante passt die Höhe des eingebetteten Formulars **automatisch** an de
 1. Im Admin-Bereich unter **Einbetten** den bereitgestellten Code kopieren. Er besteht aus zwei Zeilen:
    - einem `<div>`-Element mit dem Attribut `data-gdw-buchung`,
    - einem `<script>`-Tag, dessen `src` auf `.../embed.js` verweist.
+   - Für die **englische** Seite ergänzt der Schnipsel am `<div>` zusätzlich `data-lang="en"` – der Loader bindet dann automatisch `/embed?lang=en` ein.
 2. In TYPO3 auf der gewünschten Seite ein Inhaltselement vom Typ **HTML** (bzw. „Allgemein: HTML“) anlegen.
 3. Den kopierten Code einfügen und speichern.
 4. Seite im Frontend aufrufen und prüfen, ob das Formular korrekt angezeigt wird und sich die Höhe beim Durchklicken der Schritte automatisch anpasst.
@@ -459,6 +532,21 @@ Die wichtigsten Schritte für die Inbetriebnahme in der richtigen Reihenfolge:
 5. ☐ Stammdaten pflegen: Referent:innen, Themen, Einrichtungstypen, Schließtage, Räume, Angebotsarten und globale Einstellungen (Puffer, Vorlaufzeit, Verfallszeit, Öffnungstage, Team-Benachrichtigungs-E-Mail).
 6. ☐ Einbettung im TYPO3 gemäß `/admin/einbetten` einrichten und die einbettende Domain in `EMBED_FRAME_ANCESTORS` freischalten.
 7. ☐ Regelmäßige Backups über Coolify sicherstellen.
+8. ☐ Sicherstellen, dass der **Testmodus produktiv deaktiviert** ist (siehe 9.4).
+
+### 9.4 Testmodus in Produktion deaktivieren
+
+Der QA-/Testmodus (siehe [Abschnitt 11](#11-qa-testmodus-nur-test-schulungsumgebung)) wird über die Umgebungsvariable **`TEST_MODE`** gesteuert. In einer Produktivumgebung **muss diese Variable ausgeschaltet bleiben** (nicht gesetzt).
+
+- Ist `TEST_MODE` aus, registriert der Server **keine** Testrouten; jeder Aufruf von `/api/test/*` läuft ins normale 404 und bietet damit keine Angriffsfläche. Auch das simulierte „Jetzt" wird ignoriert – es gilt ausschließlich die echte Systemzeit.
+- Setzen Sie `TEST_MODE` nur in klar getrennten Test-, Abnahme- oder Schulungsumgebungen.
+
+### 9.5 Weitere Umgebungsvariablen
+
+| Variable | Bedeutung |
+|---|---|
+| `EMBED_FRAME_ANCESTORS` | Kommagetrennte Liste der Domains, die das Formular per iframe einbetten dürfen (`frame-ancestors`-CSP). Ohne Eintrag der Ziel-Domain blockiert der Browser die Einbettung. |
+| `TEST_MODE` | Aktiviert den QA-/Testmodus. **Produktiv aus.** |
 
 ---
 
@@ -474,4 +562,50 @@ Das System blockiert die Bestätigung **hart nur dann**, wenn ein konkret **gew�
 Der Kalender zeigt nur tatsächlich buchbare Zeiten. Fehlen Termine, liegt das meist an einer dieser Ursachen: keine passenden Referent:innen mit dem gewählten Thema verfügbar, bei Seminaren kein freier Raum, der Tag ist ein Schließtag oder liegt außerhalb der Öffnungstage, der Termin liegt innerhalb der minimalen oder jenseits der maximalen Vorlauffrist, oder der Tag ist bereits ausgebucht. Prüfen Sie entsprechend die Verfügbarkeiten, Räume, Schließtage und die globalen Einstellungen (siehe [Abschnitt 5](#5-stammdaten-pflegen)).
 
 **Wie binde ich das Formular in unsere Webseite ein?**
-Nutzen Sie die fertigen Code-Bausteine unter **Einbetten** (`/admin/einbetten`) – empfohlen ist das Lade-Skript mit automatischer Höhenanpassung, alternativ ein iframe auf `/embed`. Fügen Sie den Code in TYPO3 als HTML-Inhaltselement ein. Die einbettende Domain muss zuvor in der Umgebungsvariable `EMBED_FRAME_ANCESTORS` freigeschaltet sein. Details in [Abschnitt 8](#8-das-formular-in-die-webseite-einbetten-typo3).
+Nutzen Sie die fertigen Code-Bausteine unter **Einbetten** (`/admin/einbetten`) – empfohlen ist das Lade-Skript mit automatischer Höhenanpassung, alternativ ein iframe auf `/embed`. Fügen Sie den Code in TYPO3 als HTML-Inhaltselement ein. Für die englische Seite gibt es denselben Schnipsel mit `data-lang="en"` bzw. `/embed?lang=en`. Die einbettende Domain muss zuvor in der Umgebungsvariable `EMBED_FRAME_ANCESTORS` freigeschaltet sein. Details in [Abschnitt 8](#8-das-formular-in-die-webseite-einbetten-typo3).
+
+---
+
+## 11. QA-/Testmodus (nur Test-/Schulungsumgebung)
+
+> **Achtung:** Dieses Kapitel gilt **ausschließlich** für eine Test-, Abnahme- oder Schulungsumgebung, in der der Server mit der Umgebungsvariable **`TEST_MODE`** gestartet wurde. In der **Produktivumgebung ist der Testmodus aus** – die zugehörige Seite und alle Testfunktionen sind dann gar nicht vorhanden.
+
+Ist der Testmodus aktiv, erscheint für die Rollen **Leitung** und **Mitarbeiter** in der Seitenleiste unter „System" der zusätzliche Menüpunkt **„QA / Testmodus"** (`/admin/test`). Er bündelt Werkzeuge, mit denen sich Abläufe gefahrlos durchspielen lassen, ohne auf echte Termine warten zu müssen.
+
+### Simuliertes „Geschäfts-Heute" (Datum & Uhrzeit)
+
+Sie können dem System vorübergehend ein **anderes „Jetzt"** vorgeben – etwa um zu prüfen, wie sich der Kalender, der Verfall offener Anfragen oder die Freischaltung der Ist-Erfassung an einem künftigen Datum verhält.
+
+- Ist ein Simulationsdatum aktiv, zeigt ein **amberfarbener Balken** oben das aktive Datum samt Uhrzeit an, mit einem Link **„verwalten"** zur QA-Seite.
+- Auf der QA-Seite setzen Sie ein Datum bzw. eine Uhrzeit oder wählen **„Auf Echtzeit zurücksetzen"**.
+
+### Rollen-Override (temporär eine andere Rolle testen)
+
+Sie können vorübergehend **als Leitung, Mitarbeiter oder Auskunftsassistenz agieren**, um die jeweiligen Sichten und Rechte zu prüfen. Der Wechsel wirkt **durchgängig** – sowohl im Frontend (Menü/Sichten) als auch serverseitig (Rechteprüfungen), weil die wirksame Rolle Ihres Kontos umgeschaltet wird.
+
+- Solange ein Override aktiv ist, erscheint ein **persistenter violetter Balken**: „Simulierte Rolle: X (echt: Y)" mit der Schaltfläche **„Zurücksetzen"**.
+- Dieser Balken ist **immer erreichbar** – auch wenn Sie sich gerade als **Auskunftsassistenz** ausgeben (die den QA-Menüpunkt nicht sieht). So kommen Sie jederzeit auf Ihre echte Rolle zurück.
+
+### Testdaten und Verfall
+
+- **Testdaten seeden** – legt klar als Test markierte Beispieldaten (Präfix `[Test]` / `[TESTDATA]`) an.
+- **Testdaten zurücksetzen** – entfernt **nur** die so markierten Testdaten; echte Daten bleiben unberührt.
+- **Cron: Verfall auslösen** – stößt den Verfall abgelaufener offener Anfragen manuell an (nutzt das simulierte „Jetzt"), statt auf den nächtlichen Automatiklauf zu warten.
+
+### Hintergrund für technisch Verantwortliche: Ablauf und Endpunkte
+
+Der Testmodus ist doppelt abgesichert: Ist `TEST_MODE` aus, wird **keine** der folgenden Routen registriert; ist er an, liegt jede Route zusätzlich hinter der Anmeldung als `mitarbeiter`.
+
+| Endpunkt | Zweck |
+|---|---|
+| `GET /api/test/status` | Immer registriert (liefert bei ausgeschaltetem Modus 404). Meldet das simulierte „Jetzt", ob ein Datums-Offset aktiv ist, die wirksame Rolle und einen ggf. aktiven Rollen-Override. Grundlage für den amber- und den violettfarbenen Balken. |
+| `POST /api/test/jetzt` | Setzt das simulierte „Jetzt" per Datum bzw. Zeitpunkt oder setzt es auf Echtzeit zurück. |
+| `POST /api/test/rolle` | Schaltet die **wirksame Rolle** des eigenen Kontos temporär um (Leitung/Mitarbeiter/Auskunftsassistenz). |
+| `POST /api/test/rolle/reset` | Setzt die wirksame Rolle auf die echte zurück. Bewusst **ohne** Rollen-Guard, damit die Rückkehr auch aus „Auskunftsassistenz" heraus möglich bleibt. |
+| `POST /api/test/seed` | Erzeugt markierte Testdaten. |
+| `POST /api/test/reset` | Entfernt ausschließlich markierte Testdaten. |
+| `POST /api/test/cron/verfall` | Löst den Verfall-Job manuell aus (mit dem simulierten „Jetzt" als Stichzeit). |
+
+**Wie der Rollen-Override durchgreift:** Beim Umschalten wird die Rolle **direkt im Konto-Datensatz** überschrieben und die echte Rolle einmalig in einem verborgenen Feld (`qa_rolle_original`) gesichert. Da sowohl die Collection-Regeln als auch die Route-Guards die Rolle **aus genau diesem Datensatz** lesen, wirkt der Override an allen Stellen zugleich – Frontend, Access-Rules und Guards. Das Zurücksetzen stellt die gesicherte Rolle wieder her und leert das Sicherungsfeld.
+
+> **Warnung:** Diese Funktionen sind nur für Test-/Schulungszwecke gedacht. In einer produktiven Umgebung dürfen sie nicht verfügbar sein (`TEST_MODE` bleibt dort aus, siehe [Abschnitt 9.4](#94-testmodus-in-produktion-deaktivieren)).

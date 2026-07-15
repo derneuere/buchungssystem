@@ -1,6 +1,8 @@
 # SPEC.md — Buchungssystem Gedenkstätte Deutscher Widerstand
 
-**Status:** implementierungsreif · **Stand:** 2026-07-14 · **Sprache UI:** Deutsch · **Rolle Autor:** Chef-Architekt (Konsolidierung der 4 Spezialisten-Entwürfe)
+**Status:** in Betrieb (fortgeschrieben) · **Stand:** 2026-07-14 (Basis), Nachträge nach Migrationen 0003–0007 · **Sprache UI:** Deutsch · **Rolle Autor:** Chef-Architekt (Konsolidierung der 4 Spezialisten-Entwürfe)
+
+> **Nachtrag-Hinweis:** Dieses Dokument beschreibt in seinem Grundgerüst den Vor-Implementierungs-Stand. Schema, Access-Rules und Routen wurden seither über die Migrationen **0003–0007** und zusätzliche Route-Cluster fortgeschrieben. Die betroffenen Abschnitte (§0 E12+, §2.3, §3.7, §4, §5, §7–§9) enthalten entsprechend markierte **Nachträge**, die im Konfliktfall gegenüber dem ursprünglichen Text **Vorrang** haben. Maßgebliche Wahrheit bleibt der Quelltext in `pb_hooks/`.
 
 ---
 
@@ -21,6 +23,16 @@ Die vier Entwürfe widersprechen sich an mehreren Stellen. Hier die getroffenen 
 | E9 | Transaktionsmails | Backend: generischer `OnRecordAfterUpdateSuccess`-Hook | **Explizit aus den jeweiligen Route-Handlern** (Eingangsbestätigung im Buchungsanfrage-Handler, Zu-/Absage in `bestaetigen`/`ablehnen`) | Vermeidet „welches Feld hat sich geändert?"-Ambiguität und Fehlmails bei beliebigen Updates. |
 | E10 | Honeypot | Datenmodell: gespeichertes Feld; Backend: Request-Body-Feld | **Transientes Request-Body-Feld `firma_website`** (nicht persistiert) | Da Create nur über Custom-Route läuft, muss der Honeypot nicht in der DB liegen. |
 | E11 | Max. Gruppengröße | zod max 60; Backend 1–200; Datenmodell per Angebotsart | **`angebotsarten.max_teilnehmer` maßgeblich**; `einstellungen.max_gruppengroesse_absolut` (Default 200) als harte Sanity-Obergrenze | Konfigurierbarkeit pro Angebotsart + globaler DoS-Schutz. |
+
+### Nachträge zu §0 — Entscheidungen E12+ (Migrationen 0004–0007)
+
+| # | Entscheidung | Umsetzung | Begründung |
+|---|---|---|---|
+| E12 | **Kapazitätshandling**: ein Halte-Status + weiche Overrides statt harter Blocks | Status `warteliste` (Verfall-Cron-immun) + Flags `unterbesetzt`/`raum_offen`/`bestaetigt_trotz_grund` (Migration `0004`) | Integritätsverletzung ≠ Kapazitätsengpass; Detail in `docs/KAPAZITAET.md`. |
+| E13 | **3-Rollen-RBAC** statt „Rolle nur organisatorisch" | Rollen `leitung`/`mitarbeiter`/`auskunft`; Collection-Rules + Route-Guards + projizierende Auskunfts-Route (Migration `0007`) | Empfangs-/Schalterrolle mit minimalem Datenzugriff; Personal-Selbst-Eskalation geschlossen. |
+| E14 | **QA-/Testmodus mit Rollen-Override** | Route-Cluster `routes_qa.go` hinter `TEST_MODE`; simuliertes „Jetzt" (`clock.go`) + Rollen-Override via Direkt-Write auf `rolle` | Abläufe (Verfall, Freischaltungen, Rollensichten) ohne echten Zeitverlauf testbar. |
+| E15 | **Zweisprachigkeit (DE/EN) der öffentlichen Strecke** | Optionale `name_en`/`beschreibung_en` (Migration `0006`); Sprachwahl `?lang=en`; Fallback **rein im Frontend** | Englische Seite der Gedenkstätte ohne getrennte Datenpflege; Go-Routen bleiben sprachneutral. |
+| E16 | **Ist-Erfassung tagesbasiert freischalten** (nicht uhrzeitbasiert) | `status==='durchgefuehrt' \|\| tagKey(heute) >= tagKey(start)` | Nacherfassung am selben Tag ohne Warten auf die Terminuhrzeit. |
 
 ---
 
@@ -78,6 +90,33 @@ Die vier Entwürfe widersprechen sich an mehreren Stellen. Hier die getroffenen 
 | `schliesstage` | Base | nein | Feiertage/Betriebsurlaub |
 
 ### 2.3 Felder & Access-Rules
+
+> **Nachtrag §2.3 (Migrationen 0004–0007) — hat Vorrang vor den folgenden Tabellen.**
+>
+> **(a) Neue/geänderte Felder:**
+> - `mitarbeiter.rolle` (select): Werte **`leitung`, `mitarbeiter`, `auskunft`** (0007 erweitert das Enum idempotent um `auskunft`, wie 0004 den Status `warteliste`).
+> - `mitarbeiter.qa_rolle_original` (text, max 20, **hidden**): sichert die echte Rolle während eines TEST_MODE-Rollen-Overrides (0007).
+> - `buchungen`: `status` um **`warteliste`** erweitert; Flags **`unterbesetzt`**/**`raum_offen`** (bool), **`bestaetigt_trotz_grund`** (text) (0004).
+> - `themen.name_en`, `themen.beschreibung_en`; `angebotsarten.name_en`, `angebotsarten.beschreibung_en`; `einrichtungstypen.name_en` — optional, **nicht hidden**, **kein** Unique-Index (öffentlich lesbar; Fallback im Frontend) (0006).
+>
+> **(b) RBAC-Rule-Bausteine (0007):**
+> - `istPersonal` = `@request.auth.id != "" && @request.auth.rolle != "auskunft"` (Leitung + Mitarbeiter).
+> - `istLeitung` = `@request.auth.id != "" && @request.auth.rolle = "leitung"`.
+>
+> **(c) Soll-Rules pro Collection (ersetzen die alten `@request.auth.id != ""`):**
+>
+> | Collection | List/View | Create | Update | Delete |
+> |---|---|---|---|---|
+> | `mitarbeiter` | istPersonal | `null` | **istLeitung** (schließt Self-Eskalation aus 0001) | leitung **&& `@request.auth.id != id`** (nie sich selbst) |
+> | `referenten` | istPersonal | istLeitung | istLeitung | istLeitung |
+> | `verfuegbarkeiten` | istPersonal | istLeitung | istLeitung | istLeitung |
+> | `buchungen` | istPersonal | `null` (Custom-Route) | istPersonal | istPersonal |
+> | `buchung_referenten` | istPersonal | istPersonal | istPersonal | istPersonal |
+> | `themen`, `angebotsarten`, `einrichtungstypen` | `publicActiveRule` (`aktiv = true \|\| @request.auth.id != ""`) | istPersonal | istPersonal | istPersonal |
+> | `raeume`, `schliesstage` | istPersonal | istPersonal | istPersonal | istPersonal |
+> | `einstellungen` (Singleton) | istPersonal | — | istPersonal | — |
+>
+> **(d)** Die Rolle `auskunft` ist damit von **jedem** Direktzugriff auf `buchungen`/`referenten`/`verfuegbarkeiten` ausgeschlossen; sie liest ausschließlich über die projizierende Route `/api/auskunft/*` (§4.8) und schreibt Ist ausschließlich über die feld-whitelistende Route `/api/admin/buchungen/{id}/ist` (§4.7). Die Kapazitäts-Flags aus 0004 sind in `docs/KAPAZITAET.md` erläutert.
 
 **`mitarbeiter`** (Auth; email/password/verified Standard)
 
@@ -391,7 +430,9 @@ warnstufe  = konflikt ? 'hart' : ((not verfuegbar or not themaMatch) ? 'weich' :
 
 ### 3.7 Ist-Erfassung
 
-Ab Termin-Datum: pro `buchung_referenten` Checkbox `eingesetzt`; `buchungen.teilnehmer_ist` (Default = `teilnehmer_geplant`, überschreibbar). No-Show ⇒ `status=durchgefuehrt` + `teilnehmer_ist=0`. Soll-Felder bleiben unverändert.
+Pro `buchung_referenten` Checkbox `eingesetzt`; `buchungen.teilnehmer_ist` (Default = `teilnehmer_geplant`, überschreibbar). No-Show ⇒ `status=durchgefuehrt` + `teilnehmer_ist=0`. Soll-Felder bleiben unverändert.
+
+> **Nachtrag (E16): Freischaltung ist tagesbasiert, nicht uhrzeitbasiert.** Die Ist-Karte ist immer sichtbar, vor dem Termintag aber gesperrt/ausgegraut. Bedingung für die Freischaltung: `status === 'durchgefuehrt' || tagKey(heute) >= tagKey(start)` (Tagesschlüssel, nicht Zeitstempel-Vergleich) — so ist die Nacherfassung ab dem Termintag möglich, ohne die Terminuhrzeit abzuwarten. Geschrieben wird ausschließlich über die feld-whitelistende Route `/api/admin/buchungen/{id}/ist` (§4.7), die für **alle drei Rollen** offen ist und nur `teilnehmer_ist`, `eingesetzt` sowie die Transition nach `durchgefuehrt` zulässt (aus Status `bestaetigt`/`durchgefuehrt`).
 
 ### 3.8 Randfälle
 
@@ -427,14 +468,21 @@ Ab Termin-Datum: pro `buchung_referenten` Checkbox `eingesetzt`; `buchungen.teil
 |---|---|---|
 | `/api/admin/buchungen/:id/vorschlag` | POST | Referenten-Vorschlag berechnen (§3.5), **persistiert nichts** außer `planung_snapshot`. → `{benoetigt, vorschlag[], alternativen[], raumVorschlag, warnungen[]}`. |
 | `/api/admin/buchungen/:id/referenten/pruefe` | POST | Live-Konfliktcheck einzelner Kandidat (§3.6). Body `{referentId}` → `{verfuegbar, konflikt, themaMatch, warnstufe}`. |
-| `/api/admin/buchungen/:id/bestaetigen` | POST | Recheck Kapazität+Raum, `status→bestaetigt`, Zusage-Mail. Body `{raum_id?}`. `400` ohne Referenten, `409` Kapazität weg. |
+| `/api/admin/buchungen/:id/bestaetigen` | POST | Recheck Kapazität+Raum, `status→bestaetigt`, Zusage-Mail. Body `{raum_id?, trotzdem?, grund?}` (Kapazitäts-Override, §KAPAZITAET). `409` nur bei belegtem gewähltem Raum. |
 | `/api/admin/buchungen/:id/ablehnen` | POST | `status→abgelehnt`, Absage-Mail. Body `{grund, grund_an_kunde_senden}`. |
 | `/api/admin/buchungen/:id/stornieren` | POST | Bestätigte Buchung: `status→storniert`, gibt Kapazität frei (Zuordnungen bleiben fürs Reporting). Body `{grund}`. |
+| `/api/admin/buchungen` | POST | **Nachtrag (0004):** manuelle/telefonische Erfassung durch Personal (`routes_admin_buchung_manuell.go`). Weichere Prüfung als der öffentliche Weg. |
+| `/api/admin/buchungen/:id/ist` | POST | **Nachtrag (0007):** feld-whitelistende Ist-Erfassung, offen für **alle drei Rollen** (`routes_admin_ist.go`, §4.7). |
+| `/api/admin/kandidaten…` | GET/POST | **Nachtrag:** Referenten-Kandidaten + Dashboard-Kennzahlen (`routes_admin_kandidaten.go`). |
 | `/api/admin/reports/herkunft` | GET | Query `von,bis,gruppieren_nach=bundesland\|land\|einrichtungstyp,status`. GROUP-BY-Aggregation. |
 | `/api/admin/reports/soll-ist` | GET | Query `von,bis`. Geplant vs. Ist (Referenten & Teilnehmer). |
 | `/api/admin/reports/referenten-auslastung` | GET | Query `von,bis,referent_id?`. Einsätze/Stunden je Referent. |
+| `/api/auskunft/buchungen`, `/api/auskunft/buchungen/{id}` | GET | **Nachtrag (0007):** projizierte Read-Ansicht für die Rolle `auskunft` (§4.8). |
+| `/api/test/*` | GET/POST | **Nachtrag:** QA-/Testmodus, nur bei `TEST_MODE` registriert (§4.9). |
 
 Reports nutzen `app.DB().NewQuery(...)` (rohes SQL/QueryBuilder), da PB-Standard-List keine GROUP-BY-Aggregation über Relationen liefert.
+
+> **Nachtrag — Rollen-Guards:** Über `RequireAuth("mitarbeiter")` hinaus sind die Admin-Routen mit `requireRolle(...)` gestaffelt (§4.7). Kurz: Buchungs-Bearbeitung/manuell/Reports/Kandidaten = **Mitarbeiter + Leitung**; Ist-Erfassung = **alle drei Rollen**; Einladen (`routes_mitarbeiter.go`) = **nur Leitung**.
 
 ### 4.2 Über PB-Standard-API (kein Custom-Code, nur Rules)
 
@@ -442,7 +490,7 @@ Reports nutzen `app.DB().NewQuery(...)` (rohes SQL/QueryBuilder), da PB-Standard
 |---|---|
 | CRUD Referenten, Themen, Räume, Angebotsarten, Verfügbarkeiten, Einrichtungstypen, Schließtage | `/api/collections/<name>/records`, staff-only Rules |
 | Vorschlag übernehmen / Referent tauschen | Create/Update/Delete auf `buchung_referenten` |
-| Ist-Daten erfassen | `PATCH` auf `buchungen` / `buchung_referenten` |
+| Ist-Daten erfassen | **Nachtrag (0007): nicht mehr per PATCH**, sondern ausschließlich über die feld-whitelistende Custom-Route `POST /api/admin/buchungen/{id}/ist` (§4.7) — die verschärften Rules sperren den Direkt-Write für `auskunft`. |
 | Buchungsliste/Filter/Suche/Pagination | Standard-List `?filter=&sort=&page=&perPage=` |
 | Öffentliche Dropdowns (aktive Themen/Angebotsarten) | list/view-Rule `aktiv=true` |
 | Login/Logout/Refresh/Passwort-Reset Mitarbeiter | Standard-Auth-Endpoints |
@@ -471,21 +519,37 @@ func main() {
 
     registerPublicRoutes(app)
     registerAdminBuchungenRoutes(app)
+    registerAdminBuchungManuell(app)   // Nachtrag: manuelle Erfassung
+    registerAdminKandidatenRoutes(app) // Nachtrag: Kandidaten + Kennzahlen
     registerAdminReportRoutes(app)
+    registerAdminIstRoute(app)         // Nachtrag: feld-whitelistende Ist-Erfassung
+    registerAuskunftRoutes(app)        // Nachtrag: projizierte Read-Ansicht (auskunft)
+    registerMitarbeiterRoutes(app)     // Nachtrag: Einladungs-Flow (nur Leitung)
     registerMailHooks(app)
     registerCron(app)
+    registerTestRoutes(app)            // Nachtrag: QA-/Testmodus (nur TEST_MODE)
     registerStaticServing(app)   // zuletzt
 
     if err := app.Start(); err != nil { log.Fatal(err) }
 }
 ```
 
+> **Nachtrag:** Der obige Block ist gegenüber dem tatsächlichen `main.go` gekürzt dargestellt; die real registrierten Cluster stimmen mit dieser Liste überein. `Automigrate` ist real **nur im Dev-Lauf** (`go run`) aktiv, nicht produktiv.
+
 | Datei | Funktion | Inhalt |
 |---|---|---|
 | `main.go` | — | reines Wiring |
-| `routes_public.go` | `registerPublicRoutes` | health, verfuegbarkeit/{tage,slots}, buchungsanfrage (+ Rate-Limit-Bind) |
-| `routes_admin_buchungen.go` | `registerAdminBuchungenRoutes` | vorschlag, referenten/pruefe, bestaetigen, ablehnen, stornieren (`RequireAuth("mitarbeiter")`) |
-| `routes_admin_reports.go` | `registerAdminReportRoutes` | 3 Report-Routen |
+| `routes_public.go` | `registerPublicRoutes` | health, verfuegbarkeit/{tage,slots}, buchungsanfrage (+ Rate-Limit-Bind). **Referenziert `name_en` NICHT** — DE/EN-Fallback rein im Frontend. |
+| `routes_admin_buchungen.go` | `registerAdminBuchungenRoutes` | vorschlag, referenten/pruefe, bestaetigen, ablehnen, stornieren (`RequireAuth("mitarbeiter")` + `requireRolle("mitarbeiter","leitung")`) |
+| `routes_admin_buchung_manuell.go` | `registerAdminBuchungManuell` | **Nachtrag:** `POST /api/admin/buchungen` manuelle Erfassung (Guard mitarbeiter+leitung) |
+| `routes_admin_kandidaten.go` | `registerAdminKandidatenRoutes` | **Nachtrag:** Referenten-Kandidaten + Dashboard-Kennzahlen (Guard mitarbeiter+leitung) |
+| `routes_admin_ist.go` | `registerAdminIstRoute` | **Nachtrag:** `POST /api/admin/buchungen/{id}/ist` feld-whitelistend (Guard alle drei Rollen), §4.7 |
+| `routes_auskunft.go` | `registerAuskunftRoutes` | **Nachtrag:** `/api/auskunft/buchungen[/{id}]` projizierte Read-Ansicht, §4.8 |
+| `routes_mitarbeiter.go` | `registerMitarbeiterRoutes` | **Nachtrag:** Einladungs-Flow (Guard nur Leitung) |
+| `routes_qa.go` | `registerTestRoutes` | **Nachtrag:** QA-/Testmodus, nur bei `TEST_MODE`, §4.9 |
+| `auth.go` | `rolleVon`, `requireRolle` | **Nachtrag:** RBAC-Guard-Middleware (403 nach RequireAuth), §4.7 |
+| `clock.go` | `jetzt`, `setJetztOffsetSekunden`, … | **Nachtrag:** simuliertes „Jetzt" für den Testmodus (produktiv ohne Wirkung) |
+| `routes_admin_reports.go` | `registerAdminReportRoutes` | 3 Report-Routen (Guard mitarbeiter+leitung) |
 | `service_planung.go` | `BenoetigteReferenten`, `SchlageReferentenVor` | Heuristik, testbar, von Vorschlag- **und** Verfügbarkeits-Route genutzt |
 | `service_verfuegbarkeit.go` | `BerechneSlots`, `TagesStatus`, `EffektiveFenster`, `HatKollision`, `FindFreienRaum` | gemeinsame Slot-/Kollisions-/Raumberechnung |
 | `service_validation.go` | `ValidateBuchungsanfrage` | serverseitige Validierung + Fehler-Map |
@@ -520,6 +584,40 @@ func registerStaticServing(app core.App) {
 - Pro Schema-Änderung eine Go-Datei unter `migrations/`, `init()`→`m.Register(up,down)`; `up` erstellt Collections via JSON (`app.ImportCollectionsByMarshaledJSON` bzw. `core.NewBaseCollection`). Seed-Migration legt `einstellungen`-Singleton, Standard-`angebotsarten` (Führung/Seminar), Standard-`einrichtungstypen` und einen initialen `mitarbeiter` an.
 - Produktions-`serve` führt offene Migrationen beim Start aus (kein Flag nötig); Automigrate rein Dev-Komfort für Datei-Generierung.
 
+### 4.7 Rollen-Guards (Nachtrag, `auth.go`)
+
+`requireRolle(erlaubt ...string)` ist eine nach `RequireAuth("mitarbeiter")` gekettete Middleware; passt die wirksame Rolle nicht, antwortet sie mit **403** (`e.Next()` sonst). Die wirksame Rolle wird über `@request.auth`/`e.Auth.GetString("rolle")` gelesen — derselbe Wert, den auch die Collection-Rules und der QA-Override sehen.
+
+**Guard-Matrix:**
+
+| Route(n) | Guard |
+|---|---|
+| `buchungen/*` (vorschlag, pruefe, bestaetigen, ablehnen, stornieren), `POST /api/admin/buchungen` (manuell), Reports, Kandidaten | `requireRolle("mitarbeiter", "leitung")` |
+| Mitarbeiter einladen/verwalten (`routes_mitarbeiter.go`) | `requireRolle("leitung")` |
+| `POST /api/admin/buchungen/{id}/ist` | `requireRolle("leitung", "mitarbeiter", "auskunft")` |
+
+### 4.8 Auskunfts-Projektion (Nachtrag, `routes_auskunft.go`)
+
+Da eine Zeilen-Rule keine **Felder** verbergen kann und reines Frontend-Hiding über den Netzwerk-Tab umgehbar wäre, liest die Rolle `auskunft` Buchungen ausschließlich über eine projizierende Route (Model-Layer, umgeht die Rules bewusst über System-Kontext, gibt aber nur erlaubte Felder aus). Auth: `RequireAuth("mitarbeiter")` — Personal darf dieselbe schlanke Sicht ebenfalls nutzen; **kein** `requireRolle`-Ausschluss.
+
+- `GET /api/auskunft/buchungen?von&bis` — serverseitiger, **nicht überschreibbarer** Filter `status IN {bestaetigt, durchgefuehrt}`; `von`/`bis` als Berliner Tagesgrenzen → UTC. Projektion je Buchung: `id, status, start, ende, angebotsart(Name), thema(Name), raum(Name), teilnehmer_geplant, teilnehmer_ist, kontakt_name, kontakt_telefon`. **Kein** `kontakt_email`, keine Herkunft/Nachricht/Notizen.
+- `GET /api/auskunft/buchungen/{id}` — **404**, falls der Status nicht `bestaetigt`/`durchgefuehrt` ist. Zusätzlich `referenten[]` — je Zuordnung nur `{zuordnung_id, geplant, eingesetzt, referent:{name, telefon}}` (bewusst **keine** Referenten-E-Mail).
+
+### 4.9 QA-/Testmodus (Nachtrag, `routes_qa.go`, Gate `TEST_MODE`)
+
+Zwei Gates: (1) ist `TEST_MODE` aus, registriert `registerTestRoutes` **gar keine** Route (außer `status`, das dann 404 liefert) → keine Angriffsfläche; (2) jede registrierte Route zusätzlich hinter `RequireAuth("mitarbeiter")`.
+
+| Endpunkt | Zweck |
+|---|---|
+| `GET /api/test/status` | Immer registriert; 404 bei ausgeschaltetem Modus. Meldet simuliertes/echtes „Jetzt", Offset, wirksame `rolle` + `qa_rolle_original`/`rolle_override_aktiv`. |
+| `POST /api/test/jetzt` | Simuliertes „Jetzt" per `datum`/`iso` setzen oder `reset`. |
+| `POST /api/test/rolle` | Rollen-Override (s. u.). |
+| `POST /api/test/rolle/reset` | Override zurücksetzen (immer erreichbar, **kein** Guard). |
+| `POST /api/test/seed` / `…/reset` | markierte Testdaten erzeugen/entfernen. |
+| `POST /api/test/cron/verfall` | Verfall-Job manuell mit `jetzt()`-Cutoff (lässt `warteliste` unangetastet). |
+
+**Override-Mechanik:** `POST /api/test/rolle` schreibt `rolle` **direkt** im mitarbeiter-Record (`saveWithSystemContext`, umgeht die `istLeitung`-UpdateRule) und sichert die echte Rolle einmalig in `qa_rolle_original`. Weil sowohl `@request.auth.rolle` (Rules) als auch `requireRolle` (Guards) denselben Record lesen, wirkt der Override in **Frontend + Access-Rules + Route-Guards** zugleich. Bewusst **kein** `requireRolle`-Guard auf dieser Route — sonst wäre die Rück-Schaltung aus `auskunft` nicht mehr möglich.
+
 ---
 
 ## 5. Frontend-Routen & UX
@@ -550,12 +648,15 @@ func registerStaticServing(app core.App) {
 
 ### 5.2 Admin-Panel (SPA, `mitarbeiter`-Login)
 
+> **Nachtrag — rollenbasierte Navigation & QA-Balken (`AdminShell.tsx`):** Die Seitenleiste blendet Menüpunkte je wirksamer Rolle ein (`useRolle()`). Gruppen `PERSONAL = ['leitung','mitarbeiter']` und `NUR_LEITUNG = ['leitung']`. „Buchungen" und „Hilfe" sind für **alle drei** Rollen sichtbar; „Mitarbeiter" nur für Leitung; Dashboard/Auswertungen/Stammdaten/Neue Buchung/Einbetten/Einstellungen für Personal. `auskunft` sieht damit nur „Buchungen" (schlanke Sicht) + „Hilfe". Der QA-Menüpunkt `/admin/test` erscheint nur bei `test.test_mode && rolle ∈ {leitung, mitarbeiter}`. Zwei Balken oben: **violett** (Rollen-Override aktiv, rollenunabhängig sichtbar inkl. Reset — auch als simulierte `auskunft`) und **amber** (simuliertes Datum aktiv, Link „verwalten"). Ohne `TEST_MODE` liefert die Status-Route 404 → beide Balken/der QA-Eintrag bleiben unsichtbar.
+
 **Routen** — geschützt via TanStack Router `beforeLoad` auf `_authenticated`-Layout (`pb.authStore.isValid` + `collectionName==="mitarbeiter"`, sonst Redirect `/admin/login`):
 
 | Route | Inhalt |
 |---|---|
 | `/admin/login` | Login (`authWithPassword`) |
-| `/admin` | Dashboard: KPI-Karten (offene Anfragen, kommende Termine, Auslastung Woche), „Neue Anfragen" (Inline Bestätigen/Ablehnen), „Nächste Termine" (7 Tage) |
+| `/admin` | Dashboard: KPI-Karten (offene Anfragen, kommende Termine, Auslastung Woche, **offene Ist-Erfassungen**), „Neue Anfragen" (Inline Bestätigen/Ablehnen), „Nächste Termine" (7 Tage), **„Offene Ist-Erfassungen"** (bestätigte Termine ab Termintag ohne erfasstes Ist — `status = "bestaetigt" && start < morgenStart`; verlinkt in die Detailsicht) |
+| `/admin/test` | **Nachtrag:** QA-/Testmodus (nur bei `TEST_MODE`, Rolle Leitung/Mitarbeiter): simuliertes „Jetzt", Rollen-Override, Seed/Reset, Verfall auslösen |
 | `/admin/buchungen` | Liste (Filter Status/Zeitraum/Angebotsart) |
 | `/admin/buchungen/$id` | **Detail** (§5.3) |
 | `/admin/referenten`, `/$id` | CRUD + Themen (Multi-Combobox) + Verfügbarkeits-Kalender |
@@ -568,13 +669,26 @@ func registerStaticServing(app core.App) {
 
 - **a) Buchungsdaten** — read-only (Angebotsart, Thema, Termin, Gruppengröße, Herkunft, Kontakt).
 - **b) Referenten-Planung (Soll)** — Karte „Automatischer Vorschlag" (`POST …/vorschlag`) mit Ein-Klick „Übernehmen"; editierbare Liste zugewiesener Referenten (Entfernen-X + Combobox „hinzufügen", gefiltert nach Kompetenz+Verfügbarkeit; ungültige ausgegraut mit Warn-Icon, per Bestätigungsdialog trotzdem zuweisbar); Live-Check via `…/referenten/pruefe` mit Inline-Badge; Bedarfs-Badge „2 von 2" (grün) / „1 von 2" (amber); Buttons **Bestätigen** / **Ablehnen** (Pflichtgrund).
-- **c) Ist-Erfassung** (ab Termin-Datum) — Checkbox `eingesetzt` je Referent + spontane Vertretung; `teilnehmer_ist` (Default = geplant); Notiz. Schreibt nur Ist-Felder.
+- **c) Ist-Erfassung** (**ab Termin-*Tag***, tagesbasiert freigeschaltet — §3.7/E16) — Checkbox `eingesetzt` je Referent + spontane Vertretung; `teilnehmer_ist` (Default = geplant); Aktionen „Als durchgeführt markieren"/„Niemand erschienen". Schreibt nur Ist-Felder über `POST …/{id}/ist`. Vor dem Termintag sichtbar, aber gesperrt/ausgegraut.
+
+> **Nachtrag — Auskunfts-Detailweiche:** Für die Rolle `auskunft` rendert der Buchungsdetail-Screen nicht `PersonalBuchungDetail`, sondern `AuskunftBuchungDetail` — die schlanke Sicht (Angebotsart, Thema, Termin, Raum, Gruppengröße, Kontakt-Name+Telefon, Referent:innen Name+Telefon) + Ist-Erfassung, gespeist aus `/api/auskunft/*`.
 
 ### 5.4 Auswertungen (recharts)
 
 Besucher nach Herkunft (Balken Bundesland, Pie/Bar Einrichtungstyp, Datumsfilter) · Geplant vs. Ist (gruppiert, pro Monat) · Auslastung Räume/Referenten (%) · Zeitreihe Buchungen/Monat (Line, Filter Status/Angebotsart). Wiederverwendbare Chart-Komponenten mit gemeinsamer Palette/Legenden-Konvention.
 
 **Client-Libs:** pocketbase-js, @tanstack/react-query, zod, react-hook-form + @hookform/resolvers, sonner, recharts, date-fns (+ date-fns-tz), lucide-react, shadcn/ui. Design: **default shadcn**, keine Custom-Designsprache.
+
+### 5.5 i18n / Zweisprachigkeit (Nachtrag, E15)
+
+Nur die **öffentliche** Buchungsstrecke ist zweisprachig (DE/EN); das Admin-Panel ist fest Deutsch.
+
+- **Sprachwahl:** `?lang=en` (Default `de`). Zentral im `__root.tsx` als Search-Schema typisiert (`z.enum(['de','en']).catch('de').optional()`), damit `lang` app-weit lesbar ist. Zusätzlich ein Sprachumschalter (DE/EN) im Formular.
+- **Provider:** `SpracheProvider`/`useSprache` (`src/lib/sprache.tsx`) reicht `sprache`, die passende date-fns-`Locale` und `t()` durch; nur an öffentlichen Routen (index/embed/danke) eingehängt.
+- **Wörterbuch:** `src/lib/i18n.ts` (`woerterbuch: {de, en}`), Fallback-Kette **EN → DE → Key**.
+- **Stammdaten-Namen:** `lokalName()` / `lokalBeschreibung()` (`src/lib/types.ts`) liefern bei `sprache==='en'` das `name_en`/`beschreibung_en`, sonst (oder wenn leer) den deutschen Wert.
+- **Wichtig:** Die Go-Routen (`routes_public.go`) referenzieren `name_en` **nicht** — der DE/EN-Fallback passiert ausschließlich im Frontend. Der Server liefert stets beide Felder aus (sofern gepflegt).
+- Der Einbett-Loader `embed.js` kennt nur `data-lang` und hängt daraus `?lang=en` an die `/embed`-URL (§7).
 
 ---
 
@@ -645,6 +759,8 @@ Zusätzlich `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-w
 
 **Default: Mount-Script `embed.js` + iFrame-Ziel `/embed` + postMessage-Autoresize**, alles aus demselben `pb_public`. **Kein CORS nötig** (API-Aufrufe bleiben same-origin im iFrame). Voraussetzung: `frame-ancestors`-CSP (§6.4).
 
+> **Referenz-Wahrheit:** Dieser Abschnitt (Route `/embed`, postMessage `gdw-buchung:resize` mit `{height}`, Loader-Attribut nur `data-lang`) ist zusammen mit `public/embed.js` maßgeblich. Der Betriebs-Leitfaden `docs/EINBETTUNG.md` folgt diesem Stand.
+
 **Warum nicht Web-Component/Shadow-DOM-Mount?** Radix-Portale rendern nach `document.body` (durchbricht Shadow-DOM, Portal-Container-Gefrickel je Komponente); Tailwind/shadcn-Styles müssten gegen TYPO3-Theme abgeschottet werden; API würde **cross-origin** → PB-CORS für TYPO3-Domain öffnen = zusätzliche Angriffsfläche (widerspricht „kein Datenleck"); Bundle-Cache-Busting würde Betriebsaufgabe. Aufwand 1–2 Wochen für Nutzen (SEO/URL-Integration), den eine reine Buchungs-Subdomain nicht braucht. iFrame+Mount-Script ≈ 1 Tag, wartungsarm.
 
 **Dediziertes TYPO3-Plugin (Extbase)** = Phase 2, nur falls Mehrfach-Einbettung mit Presets (z.B. vorgewähltes Thema je Seite) nötig.
@@ -656,7 +772,7 @@ Zusätzlich `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-w
 <script src="https://buchung.niaz.omg.lol/embed.js" defer></script>
 ```
 
-`embed.js` (kleines eigenes Bundle, **nicht** die React-App): erzeugt iFrame auf `/embed`, Ladeindikator, verdrahtet postMessage-Resize, Fallback-Link „Formular in neuem Tab öffnen" bei Adblocker/strikter CSP.
+`embed.js` (kleines eigenes Bundle, **nicht** die React-App): erzeugt iFrame auf `/embed`, Ladeindikator, verdrahtet postMessage-Resize, Fallback-Link „Formular in neuem Tab öffnen" bei Adblocker/strikter CSP. **Englisch:** `data-lang="en"` am Ziel-`<div>` ergänzen → Loader bindet `/embed?lang=en` ein (einziges unterstütztes Konfig-Attribut, kein `data-route`/`data-params`).
 
 ### 7.3 Schnelle Variante (reines iFrame-Snippet, TYPO3-HTML-Element)
 
@@ -716,8 +832,10 @@ useEffect(() => {
 | Themen / Einrichtungstypen | Collections (admin-CRUD) | Liste |
 | Schließtage/Feiertage | `schliesstage` | Liste |
 | SMTP-Zugang | PB *Settings→Mail* (`/_/`) | global |
+| **Erlaubte Einbett-Domains** | Umgebungsvariable **`EMBED_FRAME_ANCESTORS`** | global (CSP `frame-ancestors`, §6.4/§7) |
+| **QA-/Testmodus** | Umgebungsvariable **`TEST_MODE`** | global (**produktiv aus**, §4.9) |
 
-`einstellungen` wird serverseitig pro Anfrage frisch gelesen (kein Caching → keine Stale-Config-Bugs).
+`einstellungen` wird serverseitig pro Anfrage frisch gelesen (kein Caching → keine Stale-Config-Bugs). Umgebungsvariablen werden beim Serverstart gelesen.
 
 ---
 
@@ -732,9 +850,11 @@ useEffect(() => {
 | A5 | E-Mail-Zustellung | PB-eingebauter SMTP | SMTP-Zugangsdaten der Gedenkstätte; Absender-Domain/SPF/DKIM. |
 | A6 | Captcha | nicht MVP (Honeypot+Rate-Limit) | Turnstile aktivieren, falls realer Spam auftritt (Erweiterungspunkt vorhanden). |
 | A7 | Statusabfrage eigener Anfrage durch Kunden | nicht MVP (Bestätigungsmail genügt) | Optional `GET /api/public/buchungsanfrage/:id?token=` mit gehashtem Tracking-Token. |
-| A8 | Mehrsprachigkeit | nur Deutsch | Bei Bedarf i18n nachrüsten (Struktur erlaubt es). |
+| A8 | Mehrsprachigkeit | ~~nur Deutsch~~ **ERLEDIGT (E15):** öffentliche Strecke DE/EN (`?lang=en`, optionale `name_en`/`beschreibung_en`, Frontend-Fallback); Admin fest Deutsch. | – |
 | A9 | Zeitzone-Kanten (DST) | Slot-Raster in Berliner Lokalzeit, DB in UTC, `tzdata` im Container | End-to-End-Test um DST-Umstellung (Ende Okt / Ende März). |
 | A10 | Konflikt-Übersicht (§3.8 rückwirkende Verfügbarkeit) | v1: Flag + Admin-Liste | UI-Detailgrad der Konfliktübersicht mit GDW abstimmen. |
+
+> **Nachtrag:** Über die Migrationen 0004–0007 zwischenzeitlich **entschiedene** Punkte sind in §0 als **E12–E16** dokumentiert: Kapazitätshandling (`warteliste` + Override-Flags), 3-Rollen-RBAC inkl. Auskunfts-Projektion und geschlossener Self-Eskalation, QA-/Testmodus mit Rollen-Override, DE/EN-Zweisprachigkeit sowie die tagesbasierte Ist-Freischaltung.
 
 ---
 
