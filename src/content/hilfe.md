@@ -146,7 +146,7 @@ Das Dashboard gibt Ihnen einen schnellen Überblick über den aktuellen Stand:
 
 ### 4.1 Die Buchungsliste
 
-Über den Menüpunkt **Buchungen** gelangen Sie zur vollständigen Liste aller Anfragen und Termine.
+Über den Menüpunkt **Buchungen** gelangen Sie zur Übersicht aller Anfragen und Termine. Standardmäßig öffnet sich die **Kalenderansicht** (Monat); über den Umschalter oben rechts wechseln Sie zur vollständigen **Liste**.
 
 **Filtermöglichkeiten:**
 
@@ -158,7 +158,7 @@ Das Dashboard gibt Ihnen einen schnellen Überblick über den aktuellen Stand:
 
 Die Liste ist paginiert – über die Seitennavigation am unteren Rand blättern Sie durch weitere Ergebnisse. Klicken Sie auf einen Listeneintrag, um die **Buchungsdetailansicht** zu öffnen.
 
-Oben rechts auf der Seite können Sie zwischen **Liste** und **Kalender** umschalten: Die Kalenderansicht zeigt dieselben Buchungen als Monats- oder Wochenraster und markiert Tage, die am oder über dem Tageslimit liegen. Ein Klick auf „+ N weitere" an einem vollen Tag wechselt zurück in die Liste, gefiltert auf diesen Tag. (Die Kalenderansicht steht den Rollen Leitung und Mitarbeiter zur Verfügung.)
+Die Kalenderansicht zeigt dieselben Buchungen als Monats- oder Wochenraster und markiert Tage, die am oder über dem Tageslimit liegen. Ein Klick auf „+ N weitere" an einem vollen Tag wechselt in die Liste, gefiltert auf diesen Tag. (Die Kalenderansicht steht den Rollen Leitung und Mitarbeiter zur Verfügung; die Auskunftsassistenz sieht immer die schlanke Liste.)
 
 ### 4.2 Eine telefonische oder persönliche Anfrage selbst erfassen
 

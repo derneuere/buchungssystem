@@ -1,5 +1,5 @@
 // /admin/buchungen — Liste UND Kalender derselben Buchungen in einer Route:
-// `ansicht=liste|monat|woche` (Default liste) schaltet die Ansicht um, alle
+// `ansicht=liste|monat|woche` (Default monat) schaltet die Ansicht um, alle
 // Filter leben in der URL (validateSearch) → teilbare/zurücknavigierbare Links.
 // Auskunft sieht immer die schlanke Auskunfts-Liste (kein Kalender-Toggle);
 // die harte Grenze bleibt das Backend.
@@ -52,7 +52,7 @@ function BuchungenPage() {
 function PersonalBuchungen() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const ansicht = search.ansicht ?? 'liste'
+  const ansicht = search.ansicht ?? 'monat'
   const istListe = ansicht === 'liste'
 
   return (
@@ -72,7 +72,7 @@ function PersonalBuchungen() {
               type="button"
               size="sm"
               variant={istListe ? 'default' : 'ghost'}
-              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: undefined }) })}
+              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: 'liste' }) })}
             >
               <List className="h-4 w-4" />
               Liste
@@ -81,7 +81,7 @@ function PersonalBuchungen() {
               type="button"
               size="sm"
               variant={istListe ? 'ghost' : 'default'}
-              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: 'monat' }) })}
+              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: undefined }) })}
             >
               <Calendar className="h-4 w-4" />
               Kalender

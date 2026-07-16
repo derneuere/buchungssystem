@@ -67,26 +67,9 @@ function auslastungFuer(zaehlbar: number, minLimit: number, maxLimit: number): A
   return 'ok'
 }
 
-export function BuchungenKalender() {
-  const search = routeApi.useSearch()
-  const navigate = routeApi.useNavigate()
-  const [inaktiveAnzeigen, setInaktiveAnzeigen] = useState(false)
-
-  // Die Route rendert diese Komponente nur bei ansicht=monat|woche.
-  const ansicht = search.ansicht === 'woche' ? 'woche' : 'monat'
-  const anker = search.datum ? parseISO(search.datum) : new Date()
-
-  // Sichtbarer Bereich: Monat inkl. angeschnittener Randwochen, Woche Mo–So.
-  const von =
-    ansicht === 'monat'
-      ? startOfWeek(startOfMonth(anker), { weekStartsOn: 1 })
-      : startOfWeek(anker, { weekStartsOn: 1 })
-  const bis =
-    ansicht === 'monat'
-      ? endOfWeek(endOfMonth(anker), { weekStartsOn: 1 })
-      : endOfWeek(anker, { weekStartsOn: 1 })
-  const tage = eachDayOfInterval({ start: von, end: bis })
-
+// Lädt Buchungen des Bereichs + Tageslimits — geteilt zwischen dem vollen
+// Buchungskalender und der Dashboard-Wochenübersicht.
+function useKalenderDaten(von: Date, bis: Date) {
   const buchungenQuery = useQuery({
     queryKey: ['admin', 'kalender', 'buchungen', tagKey(von), tagKey(bis)],
     queryFn: () =>
@@ -132,6 +115,54 @@ export function BuchungenKalender() {
     return map
   }, [buchungenQuery.data])
 
+  const laedt = buchungenQuery.isLoading || angebotsartenQuery.isLoading || einstellungenQuery.isLoading
+
+  return { laedt, proTag, limits }
+}
+
+// Kompakte Wochenübersicht fürs Dashboard: dieselbe Datenbasis und Optik wie
+// die Wochen-Ansicht des Buchungskalenders, ohne Navigation und Filter
+// (abgelehnte/stornierte/verfallene bleiben ausgeblendet).
+export function WochenUebersicht({ jetzt }: { jetzt: Date }) {
+  const von = startOfWeek(jetzt, { weekStartsOn: 1 })
+  const bis = endOfWeek(jetzt, { weekStartsOn: 1 })
+  const tage = eachDayOfInterval({ start: von, end: bis })
+  const { laedt, proTag, limits } = useKalenderDaten(von, bis)
+
+  if (laedt) return <Skeleton className="h-48 w-full" />
+  return (
+    <WochenAnsicht
+      tage={tage}
+      proTag={proTag}
+      minLimit={limits.min}
+      maxLimit={limits.max}
+      sichtbare={(eintraege) => eintraege.filter((b) => !INAKTIVE_STATUS.includes(b.status))}
+    />
+  )
+}
+
+export function BuchungenKalender() {
+  const search = routeApi.useSearch()
+  const navigate = routeApi.useNavigate()
+  const [inaktiveAnzeigen, setInaktiveAnzeigen] = useState(false)
+
+  // Die Route rendert diese Komponente nur bei ansicht=monat|woche.
+  const ansicht = search.ansicht === 'woche' ? 'woche' : 'monat'
+  const anker = search.datum ? parseISO(search.datum) : new Date()
+
+  // Sichtbarer Bereich: Monat inkl. angeschnittener Randwochen, Woche Mo–So.
+  const von =
+    ansicht === 'monat'
+      ? startOfWeek(startOfMonth(anker), { weekStartsOn: 1 })
+      : startOfWeek(anker, { weekStartsOn: 1 })
+  const bis =
+    ansicht === 'monat'
+      ? endOfWeek(endOfMonth(anker), { weekStartsOn: 1 })
+      : endOfWeek(anker, { weekStartsOn: 1 })
+  const tage = eachDayOfInterval({ start: von, end: bis })
+
+  const { laedt, proTag, limits } = useKalenderDaten(von, bis)
+
   function sichtbare(eintraege: Buchung[]): Buchung[] {
     if (inaktiveAnzeigen) return eintraege
     return eintraege.filter((b) => !INAKTIVE_STATUS.includes(b.status))
@@ -154,8 +185,6 @@ export function BuchungenKalender() {
     ansicht === 'monat'
       ? format(anker, 'MMMM yyyy', { locale: de })
       : `${format(von, 'd. MMM', { locale: de })} – ${format(bis, 'd. MMM yyyy', { locale: de })}`
-
-  const laedt = buchungenQuery.isLoading || angebotsartenQuery.isLoading || einstellungenQuery.isLoading
 
   return (
     <div className="space-y-6">
@@ -296,11 +325,10 @@ function MonatsAnsicht({
                       <BuchungChip key={b.id} buchung={b} />
                     ))}
                     {eintraege.length > MAX_CHIPS && (
-                      // Interner Ansichtswechsel: Liste, gefiltert auf den Tag
-                      // (ansicht/datum absichtlich nicht übernommen).
+                      // Interner Ansichtswechsel: Liste, gefiltert auf den Tag.
                       <Link
                         to="/admin/buchungen"
-                        search={{ von: key, bis: key }}
+                        search={{ ansicht: 'liste', von: key, bis: key }}
                         className="block px-1 text-[11px] text-muted-foreground hover:underline"
                       >
                         + {eintraege.length - MAX_CHIPS} weitere

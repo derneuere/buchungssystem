@@ -1,10 +1,10 @@
 // /admin — Dashboard: KPI-Karten, „Neue Anfragen" (Schnellaktionen),
-// „Nächste Termine" (7 Tage). SPEC §5.2.
+// Wochenübersicht des Buchungskalenders. SPEC §5.2.
 
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { addDays, endOfWeek, startOfDay, startOfWeek } from 'date-fns'
-import { CalendarClock, ClipboardCheck, ClipboardList, Gauge, Inbox } from 'lucide-react'
+import { CalendarClock, ClipboardCheck, Gauge, Inbox } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
 import type { Buchung, Einstellungen } from '@/lib/types'
@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/admin/shared/StatusBadge'
 import { BestaetigenDialog } from '@/components/admin/buchungen/BestaetigenDialog'
 import { AblehnenDialog } from '@/components/admin/buchungen/AblehnenDialog'
+import { WochenUebersicht } from '@/components/admin/buchungen/BuchungenKalender'
 
 export const Route = createFileRoute('/admin/_authenticated/')({
   component: DashboardPage,
@@ -174,7 +175,7 @@ function PersonalDashboard() {
             <CardDescription>Status „Angefragt" — noch nicht bearbeitet</CardDescription>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/buchungen" search={{ status: 'angefragt' }}>
+            <Link to="/admin/buchungen" search={{ ansicht: 'liste', status: 'angefragt' }}>
               Alle ansehen
             </Link>
           </Button>
@@ -248,7 +249,7 @@ function PersonalDashboard() {
             <CardDescription>Bestätigte Termine ab Termintag ohne erfasste Ist-Daten — bitte nachtragen</CardDescription>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link to="/admin/buchungen" search={{ status: 'bestaetigt' }}>
+            <Link to="/admin/buchungen" search={{ ansicht: 'liste', status: 'bestaetigt' }}>
               Alle ansehen
             </Link>
           </Button>
@@ -289,47 +290,22 @@ function PersonalDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle>Nächste Termine</CardTitle>
-            <CardDescription>Bestätigte Buchungen der nächsten 7 Tage</CardDescription>
-          </div>
-          <ClipboardList className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {naechsteTermineQuery.isLoading && (
-            <>
-              <Skeleton className="h-14 w-full" />
-              <Skeleton className="h-14 w-full" />
-            </>
-          )}
-          {!naechsteTermineQuery.isLoading && (naechsteTermineQuery.data?.items.length ?? 0) === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              Keine bestätigten Termine in den nächsten 7 Tagen.
+            <h2 className="text-lg font-semibold tracking-tight">Diese Woche</h2>
+            <p className="text-sm text-muted-foreground">
+              Alle Termine der laufenden Woche; Tage am oder über dem Tageslimit sind markiert.
             </p>
-          )}
-          {naechsteTermineQuery.data?.items.map((buchung) => (
-            <Link
-              key={buchung.id}
-              to="/admin/buchungen/$id"
-              params={{ id: buchung.id }}
-              className="flex flex-col gap-1 rounded-lg border p-3 hover:bg-accent/40 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {buchung.expand?.angebotsart?.name ?? '–'} · {buchung.expand?.thema?.name ?? '–'}
-                </p>
-                <p className="truncate text-sm text-muted-foreground">
-                  {buchung.kontakt_name} · {buchung.teilnehmer_geplant} Teiln.
-                  {buchung.expand?.raum ? ` · Raum ${buchung.expand.raum.name}` : ''}
-                </p>
-              </div>
-              <p className="shrink-0 text-sm font-medium">{formatDateTime(buchung.start)}</p>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/buchungen" search={{ ansicht: 'woche' }}>
+              Zum Kalender
             </Link>
-          ))}
-        </CardContent>
-      </Card>
+          </Button>
+        </div>
+        <WochenUebersicht jetzt={now} />
+      </div>
     </div>
   )
 }

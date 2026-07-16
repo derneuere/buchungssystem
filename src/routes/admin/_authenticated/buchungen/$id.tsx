@@ -109,7 +109,7 @@ function PersonalBuchungDetail({ id }: { id: string }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
-            <Link to="/admin/buchungen">
+            <Link to="/admin/buchungen" search={{ ansicht: 'liste' }}>
               <ArrowLeft className="h-4 w-4" />
               Zurück zur Liste
             </Link>
