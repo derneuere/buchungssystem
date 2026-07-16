@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog'
+import { ZeitraumPicker } from '@/components/admin/ZeitraumPicker'
 
 type Form = {
   art: VerfuegbarkeitArt
@@ -314,26 +315,16 @@ export function VerfuegbarkeitenManager({
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="verf-gueltig-ab">Gültig ab *</Label>
-                    <Input
-                      id="verf-gueltig-ab"
-                      type="date"
-                      value={form.gueltig_ab}
-                      onChange={(e) => setForm((f) => ({ ...f, gueltig_ab: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="verf-gueltig-bis">Gültig bis</Label>
-                    <Input
-                      id="verf-gueltig-bis"
-                      type="date"
-                      value={form.gueltig_bis}
-                      onChange={(e) => setForm((f) => ({ ...f, gueltig_bis: e.target.value }))}
-                      placeholder="unbefristet"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="verf-gueltigkeit">Gültigkeit *</Label>
+                  <ZeitraumPicker
+                    id="verf-gueltigkeit"
+                    value={{ von: form.gueltig_ab || undefined, bis: form.gueltig_bis || undefined }}
+                    onChange={(z) => setForm((f) => ({ ...f, gueltig_ab: z.von ?? '', gueltig_bis: z.bis ?? '' }))}
+                    clearable
+                    presets={[]}
+                    placeholder="Gültigkeit wählen"
+                  />
                 </div>
               </>
             )}

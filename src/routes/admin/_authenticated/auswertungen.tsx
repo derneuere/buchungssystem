@@ -24,9 +24,9 @@ import { bundeslandLabel } from '@/lib/admin-format'
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { REPORT_PRESETS, ZeitraumPicker } from '@/components/admin/ZeitraumPicker'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart'
 import type { ChartConfig } from '@/components/ui/chart'
@@ -135,12 +135,17 @@ function AuswertungenPage() {
       <Card>
         <CardContent className="flex flex-wrap items-end gap-4 pt-6">
           <div className="space-y-2">
-            <Label htmlFor="aw-von">Von</Label>
-            <Input id="aw-von" type="date" value={von} onChange={(e) => setVon(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="aw-bis">Bis</Label>
-            <Input id="aw-bis" type="date" value={bis} onChange={(e) => setBis(e.target.value)} />
+            <Label htmlFor="aw-zeitraum">Zeitraum</Label>
+            <ZeitraumPicker
+              id="aw-zeitraum"
+              value={{ von, bis }}
+              onChange={(z) => {
+                // Pflichtbereich (nicht clearable): von/bis sind stets gesetzt.
+                if (z.von) setVon(z.von)
+                if (z.bis) setBis(z.bis)
+              }}
+              presets={REPORT_PRESETS}
+            />
           </div>
         </CardContent>
       </Card>

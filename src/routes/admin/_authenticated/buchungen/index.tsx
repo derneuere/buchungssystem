@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { StatusBadge } from '@/components/admin/StatusBadge'
+import { BUCHUNGS_PRESETS, ZeitraumPicker } from '@/components/admin/ZeitraumPicker'
 
 const buchungenSearchSchema = z.object({
   status: z
@@ -207,22 +208,14 @@ function PersonalBuchungenListe() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="filter-von">Zeitraum von</Label>
-              <Input
-                id="filter-von"
-                type="date"
-                value={search.von ?? ''}
-                onChange={(e) => updateSearch({ von: e.target.value || undefined })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="filter-bis">Zeitraum bis</Label>
-              <Input
-                id="filter-bis"
-                type="date"
-                value={search.bis ?? ''}
-                onChange={(e) => updateSearch({ bis: e.target.value || undefined })}
+            <div className="space-y-2 lg:col-span-2">
+              <Label htmlFor="filter-zeitraum">Zeitraum</Label>
+              <ZeitraumPicker
+                id="filter-zeitraum"
+                value={{ von: search.von, bis: search.bis }}
+                onChange={(z) => updateSearch({ von: z.von, bis: z.bis })}
+                presets={BUCHUNGS_PRESETS}
+                clearable
               />
             </div>
           </div>
@@ -349,26 +342,13 @@ function AuskunftBuchungenListe() {
           <CardTitle className="text-base">Zeitraum</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="filter-von">Zeitraum von</Label>
-              <Input
-                id="filter-von"
-                type="date"
-                value={search.von ?? ''}
-                onChange={(e) => updateSearch({ von: e.target.value || undefined })}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="filter-bis">Zeitraum bis</Label>
-              <Input
-                id="filter-bis"
-                type="date"
-                value={search.bis ?? ''}
-                onChange={(e) => updateSearch({ bis: e.target.value || undefined })}
-              />
-            </div>
-          </div>
+          <ZeitraumPicker
+            id="auskunft-zeitraum"
+            value={{ von: search.von, bis: search.bis }}
+            onChange={(z) => updateSearch({ von: z.von, bis: z.bis })}
+            presets={BUCHUNGS_PRESETS}
+            clearable
+          />
         </CardContent>
       </Card>
 

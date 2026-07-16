@@ -56,6 +56,20 @@ export function formatZeitraum(startIso?: string | null, endeIso?: string | null
   }
 }
 
+/**
+ * "yyyy-MM-dd"-Paar (lokal, ≈ Europe/Berlin) als Datumsbereich rendern.
+ * Anders als `formatZeitraum` (Datum+Uhrzeit-Spanne) rein tagesgenau, für den
+ * ZeitraumPicker: 'dd.MM.yyyy – dd.MM.yyyy' | 'ab …' | 'bis …' | '–'.
+ */
+export function formatDatumsbereich(von?: string | null, bis?: string | null): string {
+  const v = von ? formatDate(von) : ''
+  const b = bis ? formatDate(bis) : ''
+  if (v && b) return v === b ? v : `${v} – ${b}`
+  if (v) return `ab ${v}`
+  if (b) return `bis ${b}`
+  return '–'
+}
+
 export function formatDauer(minuten?: number | null): string {
   if (!minuten && minuten !== 0) return '–'
   const h = Math.floor(minuten / 60)
