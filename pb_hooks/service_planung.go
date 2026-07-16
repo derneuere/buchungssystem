@@ -8,6 +8,7 @@ package main
 import (
 	"math"
 	"sort"
+	"time"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
@@ -169,8 +170,13 @@ func SchlageReferentenVor(app core.App, buchung *core.Record, ausschluss map[str
 func referentAuslastung(app core.App, referentID string) (int, error) {
 	loc := berlinLoc()
 	now := jetzt().In(loc)
-	von := now.AddDate(0, 0, -30).UTC().Format("2006-01-02 15:04:05.000Z")
-	bis := now.AddDate(0, 0, 30).UTC().Format("2006-01-02 15:04:05.000Z")
+	y, mo, d := now.Date()
+	// SPEC §3.5: date(start) BETWEEN heute-30 UND heute+30 — auf lokale
+	// Mitternacht trunkiert; bis = Mitternacht nach dem +30-Tag (exklusiv),
+	// deckt so den ganzen +30-Tag ab.
+	heute := time.Date(y, mo, d, 0, 0, 0, 0, loc)
+	von := heute.AddDate(0, 0, -30).UTC().Format("2006-01-02 15:04:05.000Z")
+	bis := heute.AddDate(0, 0, 31).UTC().Format("2006-01-02 15:04:05.000Z")
 	var n int
 	err := app.DB().
 		NewQuery(`
@@ -180,7 +186,7 @@ func referentAuslastung(app core.App, referentID string) (int, error) {
 			WHERE br.referent = {:ref}
 			  AND br.geplant = true
 			  AND b.status IN ('bestaetigt','durchgefuehrt')
-			  AND b.start >= {:von} AND b.start <= {:bis}
+			  AND b.start >= {:von} AND b.start < {:bis}
 		`).
 		Bind(dbx.Params{"ref": referentID, "von": von, "bis": bis}).
 		Row(&n)

@@ -209,12 +209,22 @@ func ValidateBuchungsanfrage(app core.App, req *BuchungsanfrageRequest) (*Validi
 	}, nil
 }
 
-// parseStart accepts RFC3339 (with Z or offset). Result is normalized to UTC.
+// parseStart accepts RFC3339 (with Z or offset) and zoneless layouts. Result is
+// normalized to UTC. Offset-qualified input keeps its zone; zoneless input is
+// interpreted as Berlin local time (the booking form submits wall-clock time),
+// not as UTC.
 func parseStart(s string) (time.Time, error) {
-	layouts := []string{time.RFC3339, "2006-01-02T15:04:05Z07:00", "2006-01-02T15:04:05", "2006-01-02 15:04:05Z"}
-	var lastErr error
-	for _, l := range layouts {
+	// Offset-qualifiziert: Zone aus der Eingabe übernehmen.
+	for _, l := range []string{time.RFC3339, "2006-01-02T15:04:05Z07:00"} {
 		if t, err := time.Parse(l, s); err == nil {
+			return t.UTC(), nil
+		}
+	}
+	// Zonenlos: als Berliner Ortszeit interpretieren.
+	loc := berlinLoc()
+	var lastErr error
+	for _, l := range []string{"2006-01-02T15:04:05", "2006-01-02 15:04:05Z"} {
+		if t, err := time.ParseInLocation(l, s, loc); err == nil {
 			return t.UTC(), nil
 		} else {
 			lastErr = err

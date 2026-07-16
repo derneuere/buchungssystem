@@ -6,6 +6,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +16,20 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 )
+
+// pruefeStatusUebergang stellt sicher, dass der aktuelle Status der Buchung zu
+// den für die Aktion erlaubten Ausgangsstatus gehört. Andernfalls -> 409 mit
+// einer deutschen Meldung, die den aktuellen Status nennt. Verhindert u. a.
+// doppelte Zusage-Mails beim erneuten Bestätigen.
+func pruefeStatusUebergang(aktuell, aktion string, erlaubt ...string) error {
+	for _, s := range erlaubt {
+		if aktuell == s {
+			return nil
+		}
+	}
+	return apis.NewApiError(http.StatusConflict,
+		"Buchung im Status \""+aktuell+"\" kann nicht "+aktion+" werden.", nil)
+}
 
 func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
@@ -101,6 +116,11 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 			if err != nil || b == nil {
 				return apis.NewNotFoundError("Buchung nicht gefunden.", nil)
 			}
+			// Status-Guard: nur offene Anfragen/Wartelisten dürfen bestätigt
+			// werden (verhindert doppelte Zusage-Mails beim Re-Confirm).
+			if err := pruefeStatusUebergang(b.GetString("status"), "bestätigt", "angefragt", "warteliste"); err != nil {
+				return err
+			}
 			var body struct {
 				RaumID   string `json:"raum_id"`
 				Trotzdem bool   `json:"trotzdem"`
@@ -175,25 +195,46 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 				return apis.NewBadRequestError("Bitte einen Grund fuer die Bestaetigung trotz Warnung angeben.", nil)
 			}
 
-			if benoetigtRaum && raumID != "" {
-				b.Set("raum", raumID)
-			}
-			b.Set("status", "bestaetigt")
-			b.Set("unterbesetzt", unterbesetzt)
-			b.Set("raum_offen", raumOffen)
-			if hatWarnung {
-				grund := sanitize(body.Grund, 2000)
-				b.Set("bestaetigt_trotz_grund", grund)
-				notiz := strings.TrimSpace(b.GetString("interne_notiz"))
-				zusatz := "Bestaetigt trotz Warnung: " + grund
-				if notiz != "" {
-					notiz += "\n" + zusatz
-				} else {
-					notiz = zusatz
+			// Atomarer Recheck + Save: die Raum-Belegtprüfung oben und der Save
+			// laufen sonst nicht-atomar — zwei Mitarbeiter könnten zwei
+			// angefragte Buchungen (raum="") für denselben Slot/Raum zeitgleich
+			// bestätigen und beide den Check passieren. Recheck innerhalb der
+			// Transaktion (SPEC §3.8) schließt die Race; wird der Raum inzwischen
+			// belegt -> 409.
+			raumKonflikt := false
+			txErr := app.RunInTransaction(func(txApp core.App) error {
+				if benoetigtRaum && raumID != "" {
+					belegt, err := raumBelegt(txApp, raumID, start, von, bis, cfg.PufferMinuten, b.Id)
+					if err != nil {
+						return err
+					}
+					if belegt {
+						raumKonflikt = true
+						return errors.New("raum inzwischen belegt")
+					}
+					b.Set("raum", raumID)
 				}
-				b.Set("interne_notiz", sanitize(notiz, 2000))
+				b.Set("status", "bestaetigt")
+				b.Set("unterbesetzt", unterbesetzt)
+				b.Set("raum_offen", raumOffen)
+				if hatWarnung {
+					grund := sanitize(body.Grund, 2000)
+					b.Set("bestaetigt_trotz_grund", grund)
+					notiz := strings.TrimSpace(b.GetString("interne_notiz"))
+					zusatz := "Bestaetigt trotz Warnung: " + grund
+					if notiz != "" {
+						notiz += "\n" + zusatz
+					} else {
+						notiz = zusatz
+					}
+					b.Set("interne_notiz", sanitize(notiz, 2000))
+				}
+				return txApp.Save(b)
+			})
+			if raumKonflikt {
+				return apis.NewApiError(http.StatusConflict, "Der gewaehlte Raum ist zu diesem Zeitpunkt bereits belegt. Bitte einen anderen Raum waehlen.", nil)
 			}
-			if err := app.Save(b); err != nil {
+			if txErr != nil {
 				return apis.NewApiError(http.StatusInternalServerError, "Bestaetigung konnte nicht gespeichert werden.", nil)
 			}
 			sendZusage(app, b)
@@ -205,6 +246,9 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 			b, err := app.FindRecordById("buchungen", e.Request.PathValue("id"))
 			if err != nil || b == nil {
 				return apis.NewNotFoundError("Buchung nicht gefunden.", nil)
+			}
+			if err := pruefeStatusUebergang(b.GetString("status"), "abgelehnt", "angefragt", "warteliste"); err != nil {
+				return err
 			}
 			var body struct {
 				Grund             string `json:"grund"`
@@ -226,6 +270,9 @@ func registerAdminBuchungenRoutes(app *pocketbase.PocketBase) {
 			b, err := app.FindRecordById("buchungen", e.Request.PathValue("id"))
 			if err != nil || b == nil {
 				return apis.NewNotFoundError("Buchung nicht gefunden.", nil)
+			}
+			if err := pruefeStatusUebergang(b.GetString("status"), "storniert", "angefragt", "warteliste", "bestaetigt"); err != nil {
+				return err
 			}
 			var body struct {
 				Grund string `json:"grund"`

@@ -297,6 +297,10 @@ type zeitRow struct {
 // Only 'angefragt'/'bestaetigt' bookings block (SPEC §3.2). ausgenommenBuchungID
 // excludes the booking currently being (re)planned.
 func HatKollision(app core.App, referentID string, datum time.Time, von, bis, puffer int, ausgenommenBuchungID string) (bool, error) {
+	loc := berlinLoc()
+	y, mo, d := datum.In(loc).Date()
+	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc)
+	dayEnd := dayStart.AddDate(0, 0, 1)
 	var rows []zeitRow
 	err := app.DB().
 		NewQuery(`
@@ -307,8 +311,14 @@ func HatKollision(app core.App, referentID string, datum time.Time, von, bis, pu
 			  AND br.geplant = true
 			  AND b.status IN ('angefragt','bestaetigt')
 			  AND b.id != {:excl}
+			  AND b.start >= {:from} AND b.start < {:to}
 		`).
-		Bind(dbx.Params{"ref": referentID, "excl": ausgenommenBuchungID}).
+		Bind(dbx.Params{
+			"ref":  referentID,
+			"excl": ausgenommenBuchungID,
+			"from": dayStart.UTC().Format("2006-01-02 15:04:05.000Z"),
+			"to":   dayEnd.UTC().Format("2006-01-02 15:04:05.000Z"),
+		}).
 		All(&rows)
 	if err != nil {
 		return false, err
@@ -360,6 +370,10 @@ func FindFreienRaum(app core.App, datum time.Time, von, bis, gruppengroesse, puf
 
 // raumBelegt checks whether a room is occupied in the given window (incl. puffer).
 func raumBelegt(app core.App, raumID string, datum time.Time, von, bis, puffer int, ausgenommenBuchungID string) (bool, error) {
+	loc := berlinLoc()
+	y, mo, d := datum.In(loc).Date()
+	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc)
+	dayEnd := dayStart.AddDate(0, 0, 1)
 	var rows []zeitRow
 	err := app.DB().
 		NewQuery(`
@@ -367,8 +381,14 @@ func raumBelegt(app core.App, raumID string, datum time.Time, von, bis, puffer i
 			WHERE raum = {:raum}
 			  AND status IN ('angefragt','bestaetigt')
 			  AND id != {:excl}
+			  AND start >= {:from} AND start < {:to}
 		`).
-		Bind(dbx.Params{"raum": raumID, "excl": ausgenommenBuchungID}).
+		Bind(dbx.Params{
+			"raum": raumID,
+			"excl": ausgenommenBuchungID,
+			"from": dayStart.UTC().Format("2006-01-02 15:04:05.000Z"),
+			"to":   dayEnd.UTC().Format("2006-01-02 15:04:05.000Z"),
+		}).
 		All(&rows)
 	if err != nil {
 		return false, err
@@ -583,14 +603,15 @@ func TagesStatus(app core.App, angebotsartID, themaID string, datum time.Time, g
 func istSchliesstag(app core.App, datum time.Time) (bool, error) {
 	loc := berlinLoc()
 	y, mo, d := datum.In(loc).Date()
-	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc).UTC()
-	dayEnd := dayStart.Add(24 * time.Hour)
+	// Nächste lokale Mitternacht (AddDate statt +24h — korrekt an 23h/25h-DST-Tagen).
+	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc)
+	dayEnd := dayStart.AddDate(0, 0, 1)
 	var n int
 	err := app.DB().
 		NewQuery(`SELECT COUNT(*) FROM schliesstage WHERE datum >= {:from} AND datum < {:to}`).
 		Bind(dbx.Params{
-			"from": dayStart.Format("2006-01-02 15:04:05.000Z"),
-			"to":   dayEnd.Format("2006-01-02 15:04:05.000Z"),
+			"from": dayStart.UTC().Format("2006-01-02 15:04:05.000Z"),
+			"to":   dayEnd.UTC().Format("2006-01-02 15:04:05.000Z"),
 		}).
 		Row(&n)
 	if err != nil {
@@ -603,8 +624,9 @@ func istSchliesstag(app core.App, datum time.Time) (bool, error) {
 func zaehleTagesBuchungen(app core.App, datum time.Time) (int, error) {
 	loc := berlinLoc()
 	y, mo, d := datum.In(loc).Date()
-	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc).UTC()
-	dayEnd := dayStart.Add(24 * time.Hour)
+	// Nächste lokale Mitternacht (AddDate statt +24h — korrekt an 23h/25h-DST-Tagen).
+	dayStart := time.Date(y, mo, d, 0, 0, 0, 0, loc)
+	dayEnd := dayStart.AddDate(0, 0, 1)
 	var n int
 	err := app.DB().
 		NewQuery(`
@@ -613,8 +635,8 @@ func zaehleTagesBuchungen(app core.App, datum time.Time) (int, error) {
 			  AND start >= {:from} AND start < {:to}
 		`).
 		Bind(dbx.Params{
-			"from": dayStart.Format("2006-01-02 15:04:05.000Z"),
-			"to":   dayEnd.Format("2006-01-02 15:04:05.000Z"),
+			"from": dayStart.UTC().Format("2006-01-02 15:04:05.000Z"),
+			"to":   dayEnd.UTC().Format("2006-01-02 15:04:05.000Z"),
 		}).
 		Row(&n)
 	if err != nil {
