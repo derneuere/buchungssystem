@@ -1,29 +1,22 @@
-// /admin/buchungen — Liste mit Filtern (Status, Zeitraum, Angebotsart) + Pagination.
-// Filterzustand lebt in der URL (validateSearch) → teilbare/zurücknavigierbare Links.
+// /admin/buchungen — Liste UND Kalender derselben Buchungen in einer Route:
+// `ansicht=liste|monat|woche` (Default liste) schaltet die Ansicht um, alle
+// Filter leben in der URL (validateSearch) → teilbare/zurücknavigierbare Links.
+// Auskunft sieht immer die schlanke Auskunfts-Liste (kein Kalender-Toggle);
+// die harte Grenze bleibt das Backend.
 
-import { useEffect, useState } from 'react'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { z } from 'zod'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
+import { Calendar, List, Plus } from 'lucide-react'
 
-import { pb } from '@/lib/pocketbase'
-import type { Angebotsart, AuskunftBuchung, Buchung, BuchungStatus } from '@/lib/types'
-import { STATUS_LABEL } from '@/lib/types'
-import { auskunftBuchungen } from '@/lib/api'
 import { istAuskunft, useRolle } from '@/lib/use-rolle'
-import { formatDateTime } from '@/lib/admin-format'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
-import { StatusBadge } from '@/components/admin/StatusBadge'
-import { BUCHUNGS_PRESETS, ZeitraumPicker } from '@/components/admin/ZeitraumPicker'
+import { BuchungenListe } from '@/components/admin/buchungen/BuchungenListe'
+import { BuchungenKalender } from '@/components/admin/buchungen/BuchungenKalender'
+import { AuskunftBuchungenListe } from '@/components/admin/buchungen/AuskunftBuchungenListe'
 
 const buchungenSearchSchema = z.object({
+  ansicht: z.enum(['liste', 'monat', 'woche']).optional(),
+  // Listen-Ansicht:
   status: z
     .enum(['angefragt', 'warteliste', 'bestaetigt', 'abgelehnt', 'storniert', 'verfallen', 'durchgefuehrt'])
     .optional(),
@@ -33,382 +26,77 @@ const buchungenSearchSchema = z.object({
   q: z.string().optional(),
   sort: z.enum(['start', '-start']).optional(),
   page: z.coerce.number().int().min(1).optional(),
+  // Kalender-Ansicht (Anker-Datum):
+  datum: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 })
 
 export type BuchungenSearch = z.infer<typeof buchungenSearchSchema>
 
 export const Route = createFileRoute('/admin/_authenticated/buchungen/')({
   validateSearch: (search: Record<string, unknown>) => buchungenSearchSchema.parse(search),
-  component: BuchungenListPage,
+  component: BuchungenPage,
 })
 
-const PER_PAGE = 20
-const ALLE = '__alle__'
-
-function buildFilter(search: BuchungenSearch): string {
-  const parts: string[] = []
-  if (search.status) parts.push(`status = "${search.status}"`)
-  if (search.angebotsart) parts.push(`angebotsart = "${search.angebotsart}"`)
-  if (search.von) {
-    const iso = new Date(`${search.von}T00:00:00`).toISOString()
-    parts.push(`start >= "${iso}"`)
-  }
-  if (search.bis) {
-    const iso = new Date(`${search.bis}T23:59:59`).toISOString()
-    parts.push(`start <= "${iso}"`)
-  }
-  if (search.q && search.q.trim()) {
-    // Freitextsuche über Name/E-Mail/Einrichtung; pb.filter escaped den Wert.
-    const term = search.q.trim()
-    parts.push(
-      pb.filter(
-        '(kontakt_name ~ {:q} || kontakt_email ~ {:q} || herkunft_einrichtungsname ~ {:q})',
-        { q: term },
-      ),
-    )
-  }
-  return parts.join(' && ')
-}
-
-function BuchungenListPage() {
+function BuchungenPage() {
   const rolle = useRolle()
   if (istAuskunft(rolle)) {
+    // Auskunft: eigener Kopf, kein Toggle — `ansicht` wird bewusst ignoriert.
     return <AuskunftBuchungenListe />
   }
-  return <PersonalBuchungenListe />
+  return <PersonalBuchungen />
 }
 
-function PersonalBuchungenListe() {
+function PersonalBuchungen() {
   const search = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
-  const page = search.page ?? 1
-
-  const angebotsartenQuery = useQuery({
-    queryKey: ['admin', 'angebotsarten', 'alle'],
-    queryFn: () => pb.collection('angebotsarten').getFullList<Angebotsart>({ sort: 'sort_order' }),
-  })
-
-  const buchungenQuery = useQuery({
-    queryKey: ['admin', 'buchungen', 'liste', search],
-    queryFn: () =>
-      pb.collection('buchungen').getList<Buchung>(page, PER_PAGE, {
-        filter: buildFilter(search),
-        sort: search.sort ?? '-created',
-        expand: 'angebotsart,thema',
-      }),
-  })
-
-  function updateSearch(patch: Partial<BuchungenSearch>) {
-    navigate({ search: (prev) => ({ ...prev, ...patch, page: 1 }) })
-  }
-
-  function goToPage(next: number) {
-    navigate({ search: (prev) => ({ ...prev, page: next }) })
-  }
-
-  // Freitextsuche: lokaler Eingabestand, entprellt in die URL (300 ms).
-  const [suchtext, setSuchtext] = useState(search.q ?? '')
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const trimmed = suchtext.trim()
-      if (trimmed !== (search.q ?? '')) {
-        updateSearch({ q: trimmed || undefined })
-      }
-    }, 300)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suchtext])
-
-  // Termin-Sortierung: Klick auf die Spalte toggelt auf/absteigend; Default
-  // bleibt -created (keine explizite Termin-Sortierung gesetzt).
-  function toggleTerminSort() {
-    const next = search.sort === '-start' ? 'start' : '-start'
-    navigate({ search: (prev) => ({ ...prev, sort: next, page: 1 }) })
-  }
-  const terminSortIcon =
-    search.sort === 'start' ? (
-      <ArrowUp className="h-3.5 w-3.5" />
-    ) : search.sort === '-start' ? (
-      <ArrowDown className="h-3.5 w-3.5" />
-    ) : (
-      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-    )
-
-  const totalPages = buchungenQuery.data ? Math.max(1, buchungenQuery.data.totalPages) : 1
+  const navigate = Route.useNavigate()
+  const ansicht = search.ansicht ?? 'liste'
+  const istListe = ansicht === 'liste'
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Buchungen</h1>
-          <p className="text-sm text-muted-foreground">Alle Anfragen und Buchungen filtern und durchsuchen.</p>
+          <p className="text-sm text-muted-foreground">
+            {istListe
+              ? 'Alle Anfragen und Buchungen filtern und durchsuchen.'
+              : 'Buchungen im Überblick; Tage am oder über dem Tageslimit sind markiert.'}
+          </p>
         </div>
-        <Button asChild>
-          <Link to="/admin/buchungen/neu">
-            <Plus className="h-4 w-4" />
-            Neue Buchung
-          </Link>
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Filter</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="filter-suche">Suche</Label>
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="filter-suche"
-                placeholder="Name, E-Mail oder Einrichtung …"
-                className="pl-8"
-                value={suchtext}
-                onChange={(e) => setSuchtext(e.target.value)}
-              />
-            </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1 rounded-md border p-1">
+            <Button
+              type="button"
+              size="sm"
+              variant={istListe ? 'default' : 'ghost'}
+              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: undefined }) })}
+            >
+              <List className="h-4 w-4" />
+              Liste
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={istListe ? 'ghost' : 'default'}
+              onClick={() => navigate({ search: (prev) => ({ ...prev, ansicht: 'monat' }) })}
+            >
+              <Calendar className="h-4 w-4" />
+              Kalender
+            </Button>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select
-                value={search.status ?? ALLE}
-                onValueChange={(v) => updateSearch({ status: v === ALLE ? undefined : (v as BuchungStatus) })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALLE}>Alle Status</SelectItem>
-                  {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Angebotsart</Label>
-              <Select
-                value={search.angebotsart ?? ALLE}
-                onValueChange={(v) => updateSearch({ angebotsart: v === ALLE ? undefined : v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Alle Angebotsarten" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALLE}>Alle Angebotsarten</SelectItem>
-                  {(angebotsartenQuery.data ?? []).map((a) => (
-                    <SelectItem key={a.id} value={a.id}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 lg:col-span-2">
-              <Label htmlFor="filter-zeitraum">Zeitraum</Label>
-              <ZeitraumPicker
-                id="filter-zeitraum"
-                value={{ von: search.von, bis: search.bis }}
-                onChange={(z) => updateSearch({ von: z.von, bis: z.bis })}
-                presets={BUCHUNGS_PRESETS}
-                clearable
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kontakt</TableHead>
-                <TableHead>Angebot</TableHead>
-                <TableHead>
-                  <button
-                    type="button"
-                    onClick={toggleTerminSort}
-                    className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium hover:bg-accent"
-                    aria-label="Nach Termin sortieren"
-                  >
-                    Termin
-                    {terminSortIcon}
-                  </button>
-                </TableHead>
-                <TableHead>Teiln.</TableHead>
-                <TableHead>Herkunft</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {buchungenQuery.isLoading &&
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={6}>
-                      <Skeleton className="h-6 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              {!buchungenQuery.isLoading && (buchungenQuery.data?.items.length ?? 0) === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                    Keine Buchungen für diese Filter gefunden.
-                  </TableCell>
-                </TableRow>
-              )}
-              {buchungenQuery.data?.items.map((buchung) => (
-                <TableRow key={buchung.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link to="/admin/buchungen/$id" params={{ id: buchung.id }} className="hover:underline">
-                      <div className="font-medium">{buchung.kontakt_name}</div>
-                      <div className="text-xs text-muted-foreground">{buchung.kontakt_email}</div>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div>{buchung.expand?.angebotsart?.name ?? '–'}</div>
-                    <div className="text-xs text-muted-foreground">{buchung.expand?.thema?.name ?? '–'}</div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{formatDateTime(buchung.start)}</TableCell>
-                  <TableCell>{buchung.teilnehmer_geplant}</TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {buchung.herkunft_ort || buchung.herkunft_land}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={buchung.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          {buchungenQuery.data ? `${buchungenQuery.data.totalItems} Buchungen insgesamt` : ''}
-        </p>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => goToPage(page - 1)} disabled={page <= 1}>
-            <ChevronLeft className="h-4 w-4" />
-            Zurück
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Seite {page} von {totalPages}
-          </span>
-          <Button variant="outline" size="sm" onClick={() => goToPage(page + 1)} disabled={page >= totalPages}>
-            Weiter
-            <ChevronRight className="h-4 w-4" />
+          <Button asChild>
+            <Link to="/admin/buchungen/neu">
+              <Plus className="h-4 w-4" />
+              Neue Buchung
+            </Link>
           </Button>
         </div>
       </div>
-    </div>
-  )
-}
 
-// Schlanke Auskunfts-Liste: serverseitig auf bestätigt/durchgeführt gefiltert und
-// auf die erlaubten Felder projiziert (keine E-Mail, keine Herkunft, kein
-// Statusfilter). Datenquelle: GET /api/auskunft/buchungen.
-function AuskunftBuchungenListe() {
-  const search = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
-
-  const query = useQuery({
-    queryKey: ['admin', 'auskunft', 'buchungen', search.von, search.bis],
-    queryFn: () => auskunftBuchungen({ von: search.von, bis: search.bis }),
-  })
-
-  function updateSearch(patch: Partial<BuchungenSearch>) {
-    navigate({ search: (prev) => ({ ...prev, ...patch, page: 1 }) })
-  }
-
-  const items = query.data ?? []
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Buchungen</h1>
-        <p className="text-sm text-muted-foreground">
-          Bestätigte und durchgeführte Termine für die Auskunft am Schalter.
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Zeitraum</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ZeitraumPicker
-            id="auskunft-zeitraum"
-            value={{ von: search.von, bis: search.bis }}
-            onChange={(z) => updateSearch({ von: z.von, bis: z.bis })}
-            presets={BUCHUNGS_PRESETS}
-            clearable
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kontakt</TableHead>
-                <TableHead>Angebot</TableHead>
-                <TableHead>Termin</TableHead>
-                <TableHead>Teiln.</TableHead>
-                <TableHead>Raum</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {query.isLoading &&
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={6}>
-                      <Skeleton className="h-6 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              {!query.isLoading && items.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                    Keine bestätigten oder durchgeführten Termine im Zeitraum.
-                  </TableCell>
-                </TableRow>
-              )}
-              {items.map((b: AuskunftBuchung) => (
-                <TableRow key={b.id} className="cursor-pointer">
-                  <TableCell>
-                    <Link to="/admin/buchungen/$id" params={{ id: b.id }} className="hover:underline">
-                      <div className="font-medium">{b.kontakt_name}</div>
-                      <div className="text-xs text-muted-foreground">{b.kontakt_telefon || '–'}</div>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div>{b.angebotsart || '–'}</div>
-                    <div className="text-xs text-muted-foreground">{b.thema || '–'}</div>
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{formatDateTime(b.start)}</TableCell>
-                  <TableCell>{b.teilnehmer_geplant}</TableCell>
-                  <TableCell className="whitespace-nowrap">{b.raum || '–'}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={b.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <p className="text-sm text-muted-foreground">
-        {query.data ? `${items.length} Termine im Zeitraum` : ''}
-      </p>
+      {istListe ? <BuchungenListe /> : <BuchungenKalender />}
     </div>
   )
 }

@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { AuslastungBadge, EignungBadge } from '@/components/admin/ReferentKandidatBadges'
+import { AuslastungBadge, EignungBadge } from '@/components/admin/buchungen/ReferentKandidatBadges'
 
 const QUELLE_LABEL: Record<string, string> = { auto: 'Automatisch', manuell: 'Manuell' }
 

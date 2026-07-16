@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { StatusBadge } from '@/components/admin/StatusBadge'
+import { StatusBadge } from '@/components/admin/shared/StatusBadge'
 import { cn } from '@/lib/utils'
 
 export function AuskunftBuchungDetail({ id }: { id: string }) {

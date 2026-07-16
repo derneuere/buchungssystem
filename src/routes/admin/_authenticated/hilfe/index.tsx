@@ -11,7 +11,7 @@ import { istPersonal, useRolle } from '@/lib/use-rolle'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-export const Route = createFileRoute('/admin/_authenticated/hilfe')({
+export const Route = createFileRoute('/admin/_authenticated/hilfe/')({
   component: HilfePage,
 })
 
@@ -32,7 +32,7 @@ function HilfePage() {
           </CardHeader>
           <CardContent>
             <Button asChild variant="outline" size="sm">
-              <Link to="/admin/marktueberblick">Marktüberblick öffnen</Link>
+              <Link to="/admin/hilfe/marktueberblick">Marktüberblick öffnen</Link>
             </Button>
           </CardContent>
         </Card>

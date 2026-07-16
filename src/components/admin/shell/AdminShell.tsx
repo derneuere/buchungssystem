@@ -8,11 +8,8 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
-  Calendar,
-  CalendarClock,
-  CalendarDays,
   ClipboardList,
-  Code2,
+  Database,
   FlaskConical,
   Landmark,
   LayoutDashboard,
@@ -20,8 +17,6 @@ import {
   LogOut,
   Menu,
   Settings,
-  Sparkles,
-  UserPlus,
   Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -46,7 +41,6 @@ type NavItem = {
 }
 
 const PERSONAL: Rolle[] = ['leitung', 'mitarbeiter']
-const NUR_LEITUNG: Rolle[] = ['leitung']
 
 const ROLLE_LABEL: Record<Rolle, string> = {
   leitung: 'Leitung',
@@ -57,24 +51,14 @@ const ROLLE_LABEL: Record<Rolle, string> = {
 const HAUPTNAVIGATION: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true }, // alle drei Rollen
   { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList }, // alle drei Rollen
-  { to: '/admin/kalender', label: 'Kalender', icon: Calendar, rollen: PERSONAL },
   { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart, rollen: PERSONAL },
 ]
 
-const STAMMDATEN_NAVIGATION: NavItem[] = [
-  { to: '/admin/referenten', label: 'Referenten', icon: Users, rollen: PERSONAL },
-  { to: '/admin/themen', label: 'Themen', icon: Sparkles, rollen: PERSONAL },
-  { to: '/admin/angebotsarten', label: 'Angebotsarten', icon: CalendarClock, rollen: PERSONAL },
-  { to: '/admin/raeume', label: 'Räume', icon: Landmark, rollen: PERSONAL },
-  { to: '/admin/einrichtungstypen', label: 'Einrichtungstypen', icon: Landmark, rollen: PERSONAL },
-  { to: '/admin/schliesstage', label: 'Schließtage', icon: CalendarDays, rollen: PERSONAL },
-]
-
 const SYSTEM_NAVIGATION: NavItem[] = [
-  { to: '/admin/mitarbeiter', label: 'Mitarbeiter', icon: UserPlus, rollen: NUR_LEITUNG },
-  { to: '/admin/einbetten', label: 'Einbetten', icon: Code2, rollen: PERSONAL },
+  { to: '/admin/referenten', label: 'Referenten', icon: Users, rollen: PERSONAL },
+  { to: '/admin/stammdaten', label: 'Stammdaten', icon: Database, rollen: PERSONAL },
+  { to: '/admin/verwaltung', label: 'Verwaltung', icon: Settings, rollen: PERSONAL },
   { to: '/admin/hilfe', label: 'Hilfe', icon: BookOpen }, // alle drei Rollen
-  { to: '/admin/einstellungen', label: 'Einstellungen', icon: Settings, rollen: PERSONAL },
 ]
 
 function sichtbarFuer(items: NavItem[], rolle: Rolle | null): NavItem[] {
@@ -140,7 +124,6 @@ function SidebarBody({
   onLogout,
   onNavigate,
   hauptItems,
-  stammItems,
   systemItems,
 }: {
   pathname: string
@@ -150,7 +133,6 @@ function SidebarBody({
   onLogout: () => void
   onNavigate?: () => void
   hauptItems: NavItem[]
-  stammItems: NavItem[]
   systemItems: NavItem[]
 }) {
   return (
@@ -169,9 +151,6 @@ function SidebarBody({
       <div className="flex-1 overflow-y-auto py-2">
         {hauptItems.length > 0 && (
           <NavGroup label="Übersicht" items={hauptItems} pathname={pathname} onNavigate={onNavigate} />
-        )}
-        {stammItems.length > 0 && (
-          <NavGroup label="Stammdaten" items={stammItems} pathname={pathname} onNavigate={onNavigate} />
         )}
         {systemItems.length > 0 && (
           <NavGroup label="System" items={systemItems} pathname={pathname} onNavigate={onNavigate} />
@@ -226,7 +205,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
       ? [...systemBasis, { to: '/admin/test', label: 'QA / Testmodus', icon: FlaskConical }]
       : systemBasis
   const hauptNav = sichtbarFuer(HAUPTNAVIGATION, rolle)
-  const stammNav = sichtbarFuer(STAMMDATEN_NAVIGATION, rolle)
 
   function handleLogout() {
     setLoggingOut(true)
@@ -262,7 +240,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
           loggingOut={loggingOut}
           onLogout={handleLogout}
           hauptItems={hauptNav}
-          stammItems={stammNav}
           systemItems={systemNav}
         />
       </aside>
@@ -290,8 +267,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 }}
                 onNavigate={() => setMobileOpen(false)}
                 hauptItems={hauptNav}
-                stammItems={stammNav}
-                systemItems={systemNav}
+                      systemItems={systemNav}
               />
             </SheetContent>
           </Sheet>

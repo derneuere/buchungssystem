@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog'
+import { ConfirmDeleteDialog } from '@/components/admin/shared/ConfirmDeleteDialog'
 
 export const Route = createFileRoute('/admin/_authenticated/referenten/')({
   component: ReferentenListPage,

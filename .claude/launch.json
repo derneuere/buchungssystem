@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "fnm",
+      "runtimeArgs": ["exec", "--using=22", "--", "npm.cmd", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

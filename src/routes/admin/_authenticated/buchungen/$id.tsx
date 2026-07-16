@@ -13,7 +13,7 @@ import { bundeslandLabel, formatDate, formatZeitraum, tagKey } from '@/lib/admin
 import { getErrorMessage } from '@/lib/admin-errors'
 import { useJetzt } from '@/lib/use-test-mode'
 import { istAuskunft, useRolle } from '@/lib/use-rolle'
-import { AuskunftBuchungDetail } from '@/components/admin/AuskunftBuchungDetail'
+import { AuskunftBuchungDetail } from '@/components/admin/buchungen/AuskunftBuchungDetail'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,12 +24,12 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-import { StatusBadge } from '@/components/admin/StatusBadge'
-import { BestaetigenDialog } from '@/components/admin/BestaetigenDialog'
-import { AblehnenDialog } from '@/components/admin/AblehnenDialog'
-import { StornierenDialog } from '@/components/admin/StornierenDialog'
-import { BuchungReferentenPlanung } from '@/components/admin/BuchungReferentenPlanung'
-import { BuchungIstErfassung } from '@/components/admin/BuchungIstErfassung'
+import { StatusBadge } from '@/components/admin/shared/StatusBadge'
+import { BestaetigenDialog } from '@/components/admin/buchungen/BestaetigenDialog'
+import { AblehnenDialog } from '@/components/admin/buchungen/AblehnenDialog'
+import { StornierenDialog } from '@/components/admin/buchungen/StornierenDialog'
+import { BuchungReferentenPlanung } from '@/components/admin/buchungen/BuchungReferentenPlanung'
+import { BuchungIstErfassung } from '@/components/admin/buchungen/BuchungIstErfassung'
 
 export const Route = createFileRoute('/admin/_authenticated/buchungen/$id')({
   component: BuchungDetailPage,

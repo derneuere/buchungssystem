@@ -1,7 +1,7 @@
-// Alt-URL /admin/einstellungen → Verwaltungs-Tab (Bookmarks bleiben gültig).
+// /admin/verwaltung → erster Tab.
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/admin/_authenticated/einstellungen')({
+export const Route = createFileRoute('/admin/_authenticated/verwaltung/')({
   beforeLoad: () => {
     throw redirect({ to: '/admin/verwaltung/einstellungen', replace: true })
   },

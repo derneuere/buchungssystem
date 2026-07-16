@@ -1,7 +1,7 @@
-// Alt-URL /admin/themen → Stammdaten-Tab (Bookmarks bleiben gültig).
+// /admin/stammdaten → erster Tab.
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/admin/_authenticated/themen')({
+export const Route = createFileRoute('/admin/_authenticated/stammdaten/')({
   beforeLoad: () => {
     throw redirect({ to: '/admin/stammdaten/themen', replace: true })
   },

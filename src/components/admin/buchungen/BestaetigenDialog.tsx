@@ -23,7 +23,7 @@ import { adminBestaetigen, adminReferentenKandidaten, type BestaetigenWarnung } 
 import { getErrorMessage } from '@/lib/admin-errors'
 import { cn } from '@/lib/utils'
 import type { Raum, ReferentKandidat } from '@/lib/types'
-import { AuslastungBadge, EignungBadge } from '@/components/admin/ReferentKandidatBadges'
+import { AuslastungBadge, EignungBadge } from '@/components/admin/buchungen/ReferentKandidatBadges'
 
 /**
  * Bestätigen-Aktion mit Kapazitäts-Handling (docs/KAPAZITAET.md §2) UND

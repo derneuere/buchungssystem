@@ -158,6 +158,8 @@ Das Dashboard gibt Ihnen einen schnellen Überblick über den aktuellen Stand:
 
 Die Liste ist paginiert – über die Seitennavigation am unteren Rand blättern Sie durch weitere Ergebnisse. Klicken Sie auf einen Listeneintrag, um die **Buchungsdetailansicht** zu öffnen.
 
+Oben rechts auf der Seite können Sie zwischen **Liste** und **Kalender** umschalten: Die Kalenderansicht zeigt dieselben Buchungen als Monats- oder Wochenraster und markiert Tage, die am oder über dem Tageslimit liegen. Ein Klick auf „+ N weitere" an einem vollen Tag wechselt zurück in die Liste, gefiltert auf diesen Tag. (Die Kalenderansicht steht den Rollen Leitung und Mitarbeiter zur Verfügung.)
+
 ### 4.2 Eine telefonische oder persönliche Anfrage selbst erfassen
 
 Geht eine Anfrage nicht über das öffentliche Formular, sondern telefonisch oder persönlich bei Ihnen ein, erfassen Sie diese selbst:
@@ -243,7 +245,7 @@ In jedem dieser Fälle zeigt das System eine Warnung mit der Option **„Trotzde
 
 ## 5. Stammdaten pflegen
 
-Alle Stammdaten erreichen Sie über die Seitenleiste im Admin-Bereich (auf dem Smartphone über den Menü-Button oben). Stammdaten sind die Grundbausteine, mit denen das System automatisch passende Referent:innen vorschlägt und den Buchungskalender korrekt befüllt.
+Alle Stammdaten erreichen Sie über den Menüpunkt **Stammdaten** in der Seitenleiste (auf dem Smartphone über den Menü-Button oben); die einzelnen Bereiche — Themen, Angebotsarten, Räume, Einrichtungstypen und Schließtage — liegen dort als **Tabs** nebeneinander. Referent:innen haben weiterhin einen eigenen Menüpunkt. Stammdaten sind die Grundbausteine, mit denen das System automatisch passende Referent:innen vorschlägt und den Buchungskalender korrekt befüllt.
 
 > **Hinweis:** Änderungen an Stammdaten wirken sich erst auf **neue** Anfragen bzw. Berechnungen aus. Bestehende Buchungen bleiben unverändert.
 
@@ -279,7 +281,7 @@ Verfügbarkeiten legen fest, wann eine Person grundsätzlich einsetzbar ist. Sie
 
 Themen sind die inhaltlichen Angebote (Kompetenzen), die Referent:innen zugeordnet werden und die Besucher:innen im öffentlichen Formular als Schritt 2 auswählen.
 
-1. Seitenleiste → **Themen**.
+1. Seitenleiste → **Stammdaten** → Tab **Themen**.
 2. **Neues Thema** anlegen, benennen und speichern.
 3. Optional können Sie einen **englischen Namen (`name_en`)** und eine **englische Beschreibung (`beschreibung_en`)** hinterlegen. Diese erscheinen im öffentlichen Formular, wenn Besucher:innen Englisch wählen. Bleiben die Felder leer, wird automatisch der deutsche Text angezeigt (Fallback).
 4. Bestehende Themen können Sie bearbeiten oder löschen. Ein gelöschtes Thema steht im öffentlichen Formular nicht mehr zur Auswahl und muss bei betroffenen Referent:innen ggf. neu zugeordnet werden.
@@ -288,7 +290,7 @@ Themen sind die inhaltlichen Angebote (Kompetenzen), die Referent:innen zugeordn
 
 Räume werden nur für Seminare benötigt (Führungen blockieren keinen Raum).
 
-1. Seitenleiste → **Räume**.
+1. Seitenleiste → **Stammdaten** → Tab **Räume**.
 2. **Neuer Raum:** Namen und **Kapazität** (maximale Personenzahl) eintragen.
 3. Speichern. Die Kapazität wird bei der Kalenderprüfung im öffentlichen Formular sowie bei der Kapazitätswarnung im Buchungsdetail berücksichtigt.
 
@@ -308,7 +310,7 @@ Angebotsarten definieren die Rahmenbedingungen von Führung und Seminar:
 
 **Vorgehen:**
 
-1. Seitenleiste → **Angebotsarten**.
+1. Seitenleiste → **Stammdaten** → Tab **Angebotsarten**.
 2. **Neue Angebotsart** anlegen oder eine bestehende (Führung/Seminar) öffnen.
 3. Alle Felder aus der Tabelle ausfüllen bzw. anpassen.
 4. Zeitslots als Liste möglicher Startzeiten hinterlegen (z. B. 09:00, 11:00, 14:00).
@@ -322,7 +324,7 @@ Aus „Min. Referenten“ und „Betreuungsschlüssel“ errechnet das System di
 
 Einrichtungstypen (z. B. Schule, Universität, Verein) stehen Besucher:innen im öffentlichen Formular bei Schritt 5 „Herkunft“ zur Auswahl.
 
-1. Seitenleiste → **Einrichtungstypen**.
+1. Seitenleiste → **Stammdaten** → Tab **Einrichtungstypen**.
 2. **Neuer Einrichtungstyp** anlegen, benennen, speichern.
 3. Optional einen **englischen Namen (`name_en`)** hinterlegen (leer ⇒ Fallback auf Deutsch). Einrichtungstypen haben – anders als Themen und Angebotsarten – **keine** englische Beschreibung, nur einen englischen Namen.
 4. Bearbeiten/Löschen wie bei den anderen Stammdatenlisten.
@@ -333,13 +335,13 @@ Einrichtungstypen (z. B. Schule, Universität, Verein) stehen Besucher:innen im 
 
 Schließtage sind Tage, an denen grundsätzlich keine Führungen/Seminare stattfinden (z. B. Feiertage, Betriebsurlaub). An diesen Tagen zeigt der öffentliche Kalender keine buchbaren Zeiten an.
 
-1. Seitenleiste → **Schließtage**.
+1. Seitenleiste → **Stammdaten** → Tab **Schließtage**.
 2. **Neuer Schließtag:** Datum (bzw. Zeitraum) und optional eine Bezeichnung eintragen.
 3. Speichern. Der Tag ist ab sofort für neue Anfragen gesperrt.
 
 ### 5.8 Einstellungen (global)
 
-Unter **Einstellungen** legen Sie die grundsätzlichen Rahmenbedingungen für den gesamten Buchungsprozess fest:
+Unter **Verwaltung → Einstellungen** legen Sie die grundsätzlichen Rahmenbedingungen für den gesamten Buchungsprozess fest:
 
 | Einstellung | Bedeutung |
 |---|---|
@@ -352,7 +354,7 @@ Unter **Einstellungen** legen Sie die grundsätzlichen Rahmenbedingungen für de
 | Absolute Max-Gruppengröße | Obergrenze der Gruppengröße über alle Angebotsarten hinweg |
 | Team-Benachrichtigungs-E-Mail | Adresse, an die interne Benachrichtigungen (z. B. neue Anfragen) gehen |
 
-1. Seitenleiste → **Einstellungen**.
+1. Seitenleiste → **Verwaltung** → Tab **Einstellungen**.
 2. Gewünschte Werte anpassen.
 3. **Speichern** – die neuen Werte gelten ab sofort für den öffentlichen Buchungskalender und alle neuen Anfragen.
 
@@ -428,9 +430,9 @@ Bei der ersten Inbetriebnahme ist noch kein Mitarbeiter-Konto vorhanden. Gehen S
 
 Sobald mindestens ein Mitarbeiter-Konto existiert, laden Sie neue Kolleg:innen bequem über den Admin-Bereich ein – ein Superuser-Zugriff ist dafür nicht mehr nötig.
 
-> **Nur die Leitung darf einladen und verwalten.** Der Menüpunkt **„Mitarbeiter"** ist ausschließlich für die Rolle **Leitung** sichtbar und die Einladung serverseitig auf diese Rolle beschränkt.
+> **Nur die Leitung darf einladen und verwalten.** Der Tab **„Mitarbeiter"** unter **Verwaltung** ist ausschließlich für die Rolle **Leitung** sichtbar und die Einladung serverseitig auf diese Rolle beschränkt.
 
-1. Öffnen Sie in der Seitenleiste den Menüpunkt **„Mitarbeiter“** (`/admin/mitarbeiter`).
+1. Öffnen Sie in der Seitenleiste **Verwaltung** → Tab **„Mitarbeiter“** (`/admin/verwaltung/mitarbeiter`).
 2. Klicken Sie auf die Funktion zum Einladen eines neuen Mitarbeiters / einer neuen Mitarbeiterin.
 3. Geben Sie die **E-Mail-Adresse** ein und wählen Sie die gewünschte **Rolle**. Zur Auswahl stehen **Mitarbeiter**, **Leitung** und **Auskunftsassistenz (nur Schalter)**.
 
@@ -444,13 +446,13 @@ Sobald mindestens ein Mitarbeiter-Konto existiert, laden Sie neue Kolleg:innen b
 2. Sie vergibt dort selbst ihren **Namen** und ein **Passwort**.
 3. Nach dem Absenden ist das Konto **aktiv** und die Person kann sich unter `/admin/login` anmelden.
 
-**Konten verwalten:** In der Liste unter „Mitarbeiter“ sehen Sie zu jedem Konto den Status **„Eingeladen“** oder **„Aktiv“**. Für noch nicht aktivierte Einladungen können Sie die Einladung **erneut senden** (z. B. bei abgelaufener Gültigkeit oder nicht angekommener E-Mail) oder **widerrufen**. Aus Sicherheitsgründen können Sie Ihr **eigenes Konto nicht selbst löschen**.
+**Konten verwalten:** In der Liste unter **Verwaltung → Mitarbeiter** sehen Sie zu jedem Konto den Status **„Eingeladen“** oder **„Aktiv“**. Für noch nicht aktivierte Einladungen können Sie die Einladung **erneut senden** (z. B. bei abgelaufener Gültigkeit oder nicht angekommener E-Mail) oder **widerrufen**. Aus Sicherheitsgründen können Sie Ihr **eigenes Konto nicht selbst löschen**.
 
 ---
 
 ## 8. Das Formular in die Webseite einbetten (TYPO3)
 
-Damit Interessierte das Buchungsformular direkt auf einer Seite der Gedenkstätten-Website nutzen können, lässt es sich in TYPO3 einbetten. Die passenden, kopierbaren Code-Bausteine finden technisch Verantwortliche im Admin-Bereich unter **Einbetten** (`/admin/einbetten`). Dort werden beide Varianten – jeweils für **Deutsch und Englisch** – angezeigt, sodass Sie nichts von Hand zusammenbauen müssen.
+Damit Interessierte das Buchungsformular direkt auf einer Seite der Gedenkstätten-Website nutzen können, lässt es sich in TYPO3 einbetten. Die passenden, kopierbaren Code-Bausteine finden technisch Verantwortliche im Admin-Bereich unter **Verwaltung → Einbetten** (`/admin/verwaltung/einbetten`). Dort werden beide Varianten – jeweils für **Deutsch und Englisch** – angezeigt, sodass Sie nichts von Hand zusammenbauen müssen.
 
 > Eine ausführliche technische Anleitung mit allen Optionen und Voraussetzungen steht in **`docs/EINBETTUNG.md`**.
 
@@ -460,7 +462,7 @@ Beide Varianten binden dieselbe chromelose Formular-Route **`/embed`** ein (für
 
 Diese Variante passt die Höhe des eingebetteten Formulars **automatisch** an den Inhalt an, sodass keine Scrollbalken oder abgeschnittenen Inhalte entstehen.
 
-1. Im Admin-Bereich unter **Einbetten** den bereitgestellten Code kopieren. Er besteht aus zwei Zeilen:
+1. Im Admin-Bereich unter **Verwaltung → Einbetten** den bereitgestellten Code kopieren. Er besteht aus zwei Zeilen:
    - einem `<div>`-Element mit dem Attribut `data-gdw-buchung`,
    - einem `<script>`-Tag, dessen `src` auf `.../embed.js` verweist.
    - Für die **englische** Seite ergänzt der Schnipsel am `<div>` zusätzlich `data-lang="en"` – der Loader bindet dann automatisch `/embed?lang=en` ein.
@@ -472,7 +474,7 @@ Diese Variante passt die Höhe des eingebetteten Formulars **automatisch** an de
 
 Falls kein Skript eingebunden werden kann, steht alternativ ein reines **iframe** zur Verfügung, das auf `/embed` verweist. Auch hier passt sich die Höhe automatisch an (über postMessage-Kommunikation zwischen eingebettetem Formular und TYPO3-Seite).
 
-1. Im Admin-Bereich unter **Einbetten** den iframe-Code kopieren.
+1. Im Admin-Bereich unter **Verwaltung → Einbetten** den iframe-Code kopieren.
 2. In TYPO3 ein HTML-Inhaltselement anlegen und den iframe-Code einfügen.
 3. Speichern und im Frontend testen.
 
@@ -524,13 +526,13 @@ Die wichtigsten Schritte für die Inbetriebnahme in der richtigen Reihenfolge:
 Das System blockiert die Bestätigung **hart nur dann**, wenn ein konkret **gewählter Raum** zum gewünschten Termin bereits belegt ist. In diesem Fall müssen Sie einen anderen Raum wählen oder den Termin anpassen. Bei **Unterbesetzung**, **fehlendem Raum** oder **Terminüberschneidung** werden Sie hingegen nur gewarnt und können über **„Trotzdem bestätigen“** (mit Pflicht-Grund) fortfahren. Die Buchung wird dann als „Unterbesetzt“ bzw. „Raum offen“ gekennzeichnet. Details in [Abschnitt 4.5](#45-kapazitätshandling-unterbesetzung-raum-offen-und-trotzdem-bestätigen).
 
 **Wie lade ich Kolleg:innen ein?**
-Öffnen Sie im Admin-Bereich **Mitarbeiter** (`/admin/mitarbeiter`), geben Sie E-Mail-Adresse und Rolle ein und bestätigen Sie die Einladung. Das System legt ein inaktives Konto an und zeigt den 7 Tage gültigen Einladungslink an (bei eingerichtetem SMTP zusätzlich per E-Mail). Die eingeladene Person setzt über `/admin/einladung` selbst Name und Passwort. Details in [Abschnitt 7.4](#74-weitere-mitarbeitende-einladen).
+Öffnen Sie im Admin-Bereich **Verwaltung → Mitarbeiter** (`/admin/verwaltung/mitarbeiter`), geben Sie E-Mail-Adresse und Rolle ein und bestätigen Sie die Einladung. Das System legt ein inaktives Konto an und zeigt den 7 Tage gültigen Einladungslink an (bei eingerichtetem SMTP zusätzlich per E-Mail). Die eingeladene Person setzt über `/admin/einladung` selbst Name und Passwort. Details in [Abschnitt 7.4](#74-weitere-mitarbeitende-einladen).
 
 **Warum werden im Kalender keine (oder kaum) Termine angezeigt?**
 Der Kalender zeigt nur tatsächlich buchbare Zeiten. Fehlen Termine, liegt das meist an einer dieser Ursachen: keine passenden Referent:innen mit dem gewählten Thema verfügbar, bei Seminaren kein freier Raum, der Tag ist ein Schließtag oder liegt außerhalb der Öffnungstage, der Termin liegt innerhalb der minimalen oder jenseits der maximalen Vorlauffrist, oder der Tag ist bereits ausgebucht. Prüfen Sie entsprechend die Verfügbarkeiten, Räume, Schließtage und die globalen Einstellungen (siehe [Abschnitt 5](#5-stammdaten-pflegen)).
 
 **Wie binde ich das Formular in unsere Webseite ein?**
-Nutzen Sie die fertigen Code-Bausteine unter **Einbetten** (`/admin/einbetten`) – empfohlen ist das Lade-Skript mit automatischer Höhenanpassung, alternativ ein iframe auf `/embed`. Fügen Sie den Code in TYPO3 als HTML-Inhaltselement ein. Für die englische Seite gibt es denselben Schnipsel mit `data-lang="en"` bzw. `/embed?lang=en`. Die einbettende Domain muss zuvor in der Umgebungsvariable `EMBED_FRAME_ANCESTORS` freigeschaltet sein. Details in [Abschnitt 8](#8-das-formular-in-die-webseite-einbetten-typo3).
+Nutzen Sie die fertigen Code-Bausteine unter **Verwaltung → Einbetten** (`/admin/verwaltung/einbetten`) – empfohlen ist das Lade-Skript mit automatischer Höhenanpassung, alternativ ein iframe auf `/embed`. Fügen Sie den Code in TYPO3 als HTML-Inhaltselement ein. Für die englische Seite gibt es denselben Schnipsel mit `data-lang="en"` bzw. `/embed?lang=en`. Die einbettende Domain muss zuvor in der Umgebungsvariable `EMBED_FRAME_ANCESTORS` freigeschaltet sein. Details in [Abschnitt 8](#8-das-formular-in-die-webseite-einbetten-typo3).
 
 ---
 

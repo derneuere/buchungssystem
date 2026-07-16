@@ -11,13 +11,13 @@ import type { Buchung, Einstellungen } from '@/lib/types'
 import { formatDateTime, tagKey } from '@/lib/admin-format'
 import { useJetzt } from '@/lib/use-test-mode'
 import { istAuskunft, useRolle } from '@/lib/use-rolle'
-import { AuskunftDashboard } from '@/components/admin/AuskunftDashboard'
+import { AuskunftDashboard } from '@/components/admin/dashboard/AuskunftDashboard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StatusBadge } from '@/components/admin/StatusBadge'
-import { BestaetigenDialog } from '@/components/admin/BestaetigenDialog'
-import { AblehnenDialog } from '@/components/admin/AblehnenDialog'
+import { StatusBadge } from '@/components/admin/shared/StatusBadge'
+import { BestaetigenDialog } from '@/components/admin/buchungen/BestaetigenDialog'
+import { AblehnenDialog } from '@/components/admin/buchungen/AblehnenDialog'
 
 export const Route = createFileRoute('/admin/_authenticated/')({
   component: DashboardPage,

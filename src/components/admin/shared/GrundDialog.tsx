@@ -1,4 +1,8 @@
-import { useState } from 'react'
+// Gemeinsamer Dialog für Status-Aktionen mit Pflicht-Grund (Ablehnen,
+// Stornieren): Textarea + optionale Checkbox, destruktiver Submit-Button.
+// Die konkreten Aktionen sind dünne Wrapper (AblehnenDialog, StornierenDialog).
+
+import { useState, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -14,40 +18,57 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { adminAblehnen } from '@/lib/api'
 import { getErrorMessage } from '@/lib/admin-errors'
-import type { ReactNode } from 'react'
 
-export function AblehnenDialog({
-  buchungId,
+export function GrundDialog({
   trigger,
+  titel,
+  beschreibung,
+  platzhalter,
+  pflichtFehler,
+  submitLabel,
+  erfolgMeldung,
+  fehlerMeldung,
+  checkbox,
+  onSubmit,
   onSuccess,
 }: {
-  buchungId: string
   trigger: ReactNode
+  titel: string
+  beschreibung: string
+  platzhalter: string
+  pflichtFehler: string
+  submitLabel: string
+  erfolgMeldung: string
+  fehlerMeldung: string
+  checkbox?: { label: string; initial: boolean }
+  onSubmit: (grund: string, checkboxWert: boolean) => Promise<unknown>
   onSuccess?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [grund, setGrund] = useState('')
-  const [grundSenden, setGrundSenden] = useState(true)
+  const [checkboxWert, setCheckboxWert] = useState(checkbox?.initial ?? false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
+  // Eindeutige Feld-IDs pro Dialog-Instanz (Label-Zuordnung).
+  const feldId = `grund-${titel.replace(/\W+/g, '-').toLowerCase()}`
+
   async function handleSubmit() {
     if (!grund.trim()) {
-      setError('Bitte einen Ablehnungsgrund angeben.')
+      setError(pflichtFehler)
       return
     }
     setError('')
     setBusy(true)
     try {
-      await adminAblehnen(buchungId, { grund: grund.trim(), grund_an_kunde_senden: grundSenden })
-      toast.success('Buchung wurde abgelehnt.')
+      await onSubmit(grund.trim(), checkboxWert)
+      toast.success(erfolgMeldung)
       setOpen(false)
       setGrund('')
       onSuccess?.()
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Ablehnen fehlgeschlagen.'))
+      toast.error(getErrorMessage(err, fehlerMeldung))
     } finally {
       setBusy(false)
     }
@@ -64,33 +85,33 @@ export function AblehnenDialog({
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Buchung ablehnen</DialogTitle>
-          <DialogDescription>
-            Bitte geben Sie einen Grund für die Ablehnung an. Dieser wird intern gespeichert.
-          </DialogDescription>
+          <DialogTitle>{titel}</DialogTitle>
+          <DialogDescription>{beschreibung}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="ablehnen-grund">Grund *</Label>
+            <Label htmlFor={feldId}>Grund *</Label>
             <Textarea
-              id="ablehnen-grund"
+              id={feldId}
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
               rows={3}
-              placeholder="z.B. Termin bereits ausgebucht, kein passender Referent verfügbar …"
+              placeholder={platzhalter}
             />
             {error && <p className="text-sm font-medium text-destructive">{error}</p>}
           </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="ablehnen-senden"
-              checked={grundSenden}
-              onCheckedChange={(v) => setGrundSenden(v === true)}
-            />
-            <Label htmlFor="ablehnen-senden" className="cursor-pointer font-normal">
-              Grund per E-Mail an Kunde/Kundin senden
-            </Label>
-          </div>
+          {checkbox && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id={`${feldId}-checkbox`}
+                checked={checkboxWert}
+                onCheckedChange={(v) => setCheckboxWert(v === true)}
+              />
+              <Label htmlFor={`${feldId}-checkbox`} className="cursor-pointer font-normal">
+                {checkbox.label}
+              </Label>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={busy}>
@@ -98,7 +119,7 @@ export function AblehnenDialog({
           </Button>
           <Button type="button" variant="destructive" onClick={handleSubmit} disabled={busy}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-            Ablehnen
+            {submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

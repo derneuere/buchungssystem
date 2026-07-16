@@ -21,7 +21,7 @@ import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { VerfuegbarkeitenManager } from '@/components/admin/VerfuegbarkeitenManager'
+import { VerfuegbarkeitenManager } from '@/components/admin/referenten/VerfuegbarkeitenManager'
 
 export const Route = createFileRoute('/admin/_authenticated/referenten/$id')({
   component: ReferentDetailPage,

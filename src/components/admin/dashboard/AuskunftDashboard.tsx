@@ -15,7 +15,7 @@ import { formatDateTime, formatTime, tagKey } from '@/lib/admin-format'
 import { useJetzt } from '@/lib/use-test-mode'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { StatusBadge } from '@/components/admin/StatusBadge'
+import { StatusBadge } from '@/components/admin/shared/StatusBadge'
 
 function nachStart(a: AuskunftBuchung, b: AuskunftBuchung): number {
   return new Date(a.start).getTime() - new Date(b.start).getTime()

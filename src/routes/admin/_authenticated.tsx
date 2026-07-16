@@ -13,7 +13,7 @@
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { isAuthenticated } from '@/lib/pocketbase'
 import { aktuelleRolle } from '@/lib/use-rolle'
-import { AdminShell } from '@/components/admin/AdminShell'
+import { AdminShell } from '@/components/admin/shell/AdminShell'
 
 export const Route = createFileRoute('/admin/_authenticated')({
   beforeLoad: ({ location }) => {
@@ -35,9 +35,12 @@ export const Route = createFileRoute('/admin/_authenticated')({
       }
     }
 
-    // Mitarbeiterverwaltung nur für die Leitung.
-    if (path === '/admin/mitarbeiter' && rolle !== 'leitung') {
-      throw redirect({ to: '/admin' })
+    // Mitarbeiterverwaltung nur für die Leitung (Alt-URL + Verwaltungs-Tab).
+    if (
+      (path === '/admin/verwaltung/mitarbeiter' || path === '/admin/mitarbeiter') &&
+      rolle !== 'leitung'
+    ) {
+      throw redirect({ to: '/admin/verwaltung/einstellungen' })
     }
   },
   component: AuthenticatedLayout,

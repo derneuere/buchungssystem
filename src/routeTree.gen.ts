@@ -16,22 +16,35 @@ import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminEinladungRouteImport } from './routes/admin/einladung'
 import { Route as AdminAuthenticatedRouteImport } from './routes/admin/_authenticated'
 import { Route as AdminAuthenticatedIndexRouteImport } from './routes/admin/_authenticated/index'
+import { Route as AdminAuthenticatedVerwaltungRouteImport } from './routes/admin/_authenticated/verwaltung'
 import { Route as AdminAuthenticatedThemenRouteImport } from './routes/admin/_authenticated/themen'
 import { Route as AdminAuthenticatedTestRouteImport } from './routes/admin/_authenticated/test'
+import { Route as AdminAuthenticatedStammdatenRouteImport } from './routes/admin/_authenticated/stammdaten'
 import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/admin/_authenticated/schliesstage'
 import { Route as AdminAuthenticatedRaeumeRouteImport } from './routes/admin/_authenticated/raeume'
 import { Route as AdminAuthenticatedMitarbeiterRouteImport } from './routes/admin/_authenticated/mitarbeiter'
 import { Route as AdminAuthenticatedMarktueberblickRouteImport } from './routes/admin/_authenticated/marktueberblick'
 import { Route as AdminAuthenticatedKalenderRouteImport } from './routes/admin/_authenticated/kalender'
-import { Route as AdminAuthenticatedHilfeRouteImport } from './routes/admin/_authenticated/hilfe'
 import { Route as AdminAuthenticatedEinstellungenRouteImport } from './routes/admin/_authenticated/einstellungen'
 import { Route as AdminAuthenticatedEinrichtungstypenRouteImport } from './routes/admin/_authenticated/einrichtungstypen'
 import { Route as AdminAuthenticatedEinbettenRouteImport } from './routes/admin/_authenticated/einbetten'
 import { Route as AdminAuthenticatedAuswertungenRouteImport } from './routes/admin/_authenticated/auswertungen'
 import { Route as AdminAuthenticatedAngebotsartenRouteImport } from './routes/admin/_authenticated/angebotsarten'
+import { Route as AdminAuthenticatedVerwaltungIndexRouteImport } from './routes/admin/_authenticated/verwaltung/index'
+import { Route as AdminAuthenticatedStammdatenIndexRouteImport } from './routes/admin/_authenticated/stammdaten/index'
 import { Route as AdminAuthenticatedReferentenIndexRouteImport } from './routes/admin/_authenticated/referenten/index'
+import { Route as AdminAuthenticatedHilfeIndexRouteImport } from './routes/admin/_authenticated/hilfe/index'
 import { Route as AdminAuthenticatedBuchungenIndexRouteImport } from './routes/admin/_authenticated/buchungen/index'
+import { Route as AdminAuthenticatedVerwaltungMitarbeiterRouteImport } from './routes/admin/_authenticated/verwaltung/mitarbeiter'
+import { Route as AdminAuthenticatedVerwaltungEinstellungenRouteImport } from './routes/admin/_authenticated/verwaltung/einstellungen'
+import { Route as AdminAuthenticatedVerwaltungEinbettenRouteImport } from './routes/admin/_authenticated/verwaltung/einbetten'
+import { Route as AdminAuthenticatedStammdatenThemenRouteImport } from './routes/admin/_authenticated/stammdaten/themen'
+import { Route as AdminAuthenticatedStammdatenSchliesstageRouteImport } from './routes/admin/_authenticated/stammdaten/schliesstage'
+import { Route as AdminAuthenticatedStammdatenRaeumeRouteImport } from './routes/admin/_authenticated/stammdaten/raeume'
+import { Route as AdminAuthenticatedStammdatenEinrichtungstypenRouteImport } from './routes/admin/_authenticated/stammdaten/einrichtungstypen'
+import { Route as AdminAuthenticatedStammdatenAngebotsartenRouteImport } from './routes/admin/_authenticated/stammdaten/angebotsarten'
 import { Route as AdminAuthenticatedReferentenIdRouteImport } from './routes/admin/_authenticated/referenten/$id'
+import { Route as AdminAuthenticatedHilfeMarktueberblickRouteImport } from './routes/admin/_authenticated/hilfe/marktueberblick'
 import { Route as AdminAuthenticatedBuchungenNeuRouteImport } from './routes/admin/_authenticated/buchungen/neu'
 import { Route as AdminAuthenticatedBuchungenIdRouteImport } from './routes/admin/_authenticated/buchungen/$id'
 
@@ -70,6 +83,12 @@ const AdminAuthenticatedIndexRoute = AdminAuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminAuthenticatedRoute,
 } as any)
+const AdminAuthenticatedVerwaltungRoute =
+  AdminAuthenticatedVerwaltungRouteImport.update({
+    id: '/verwaltung',
+    path: '/verwaltung',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
 const AdminAuthenticatedThemenRoute =
   AdminAuthenticatedThemenRouteImport.update({
     id: '/themen',
@@ -81,6 +100,12 @@ const AdminAuthenticatedTestRoute = AdminAuthenticatedTestRouteImport.update({
   path: '/test',
   getParentRoute: () => AdminAuthenticatedRoute,
 } as any)
+const AdminAuthenticatedStammdatenRoute =
+  AdminAuthenticatedStammdatenRouteImport.update({
+    id: '/stammdaten',
+    path: '/stammdaten',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
 const AdminAuthenticatedSchliesstageRoute =
   AdminAuthenticatedSchliesstageRouteImport.update({
     id: '/schliesstage',
@@ -111,11 +136,6 @@ const AdminAuthenticatedKalenderRoute =
     path: '/kalender',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
-const AdminAuthenticatedHilfeRoute = AdminAuthenticatedHilfeRouteImport.update({
-  id: '/hilfe',
-  path: '/hilfe',
-  getParentRoute: () => AdminAuthenticatedRoute,
-} as any)
 const AdminAuthenticatedEinstellungenRoute =
   AdminAuthenticatedEinstellungenRouteImport.update({
     id: '/einstellungen',
@@ -146,10 +166,28 @@ const AdminAuthenticatedAngebotsartenRoute =
     path: '/angebotsarten',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedVerwaltungIndexRoute =
+  AdminAuthenticatedVerwaltungIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminAuthenticatedVerwaltungRoute,
+  } as any)
+const AdminAuthenticatedStammdatenIndexRoute =
+  AdminAuthenticatedStammdatenIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
 const AdminAuthenticatedReferentenIndexRoute =
   AdminAuthenticatedReferentenIndexRouteImport.update({
     id: '/referenten/',
     path: '/referenten/',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
+const AdminAuthenticatedHilfeIndexRoute =
+  AdminAuthenticatedHilfeIndexRouteImport.update({
+    id: '/hilfe/',
+    path: '/hilfe/',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
 const AdminAuthenticatedBuchungenIndexRoute =
@@ -158,10 +196,64 @@ const AdminAuthenticatedBuchungenIndexRoute =
     path: '/buchungen/',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedVerwaltungMitarbeiterRoute =
+  AdminAuthenticatedVerwaltungMitarbeiterRouteImport.update({
+    id: '/mitarbeiter',
+    path: '/mitarbeiter',
+    getParentRoute: () => AdminAuthenticatedVerwaltungRoute,
+  } as any)
+const AdminAuthenticatedVerwaltungEinstellungenRoute =
+  AdminAuthenticatedVerwaltungEinstellungenRouteImport.update({
+    id: '/einstellungen',
+    path: '/einstellungen',
+    getParentRoute: () => AdminAuthenticatedVerwaltungRoute,
+  } as any)
+const AdminAuthenticatedVerwaltungEinbettenRoute =
+  AdminAuthenticatedVerwaltungEinbettenRouteImport.update({
+    id: '/einbetten',
+    path: '/einbetten',
+    getParentRoute: () => AdminAuthenticatedVerwaltungRoute,
+  } as any)
+const AdminAuthenticatedStammdatenThemenRoute =
+  AdminAuthenticatedStammdatenThemenRouteImport.update({
+    id: '/themen',
+    path: '/themen',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
+const AdminAuthenticatedStammdatenSchliesstageRoute =
+  AdminAuthenticatedStammdatenSchliesstageRouteImport.update({
+    id: '/schliesstage',
+    path: '/schliesstage',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
+const AdminAuthenticatedStammdatenRaeumeRoute =
+  AdminAuthenticatedStammdatenRaeumeRouteImport.update({
+    id: '/raeume',
+    path: '/raeume',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
+const AdminAuthenticatedStammdatenEinrichtungstypenRoute =
+  AdminAuthenticatedStammdatenEinrichtungstypenRouteImport.update({
+    id: '/einrichtungstypen',
+    path: '/einrichtungstypen',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
+const AdminAuthenticatedStammdatenAngebotsartenRoute =
+  AdminAuthenticatedStammdatenAngebotsartenRouteImport.update({
+    id: '/angebotsarten',
+    path: '/angebotsarten',
+    getParentRoute: () => AdminAuthenticatedStammdatenRoute,
+  } as any)
 const AdminAuthenticatedReferentenIdRoute =
   AdminAuthenticatedReferentenIdRouteImport.update({
     id: '/referenten/$id',
     path: '/referenten/$id',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
+const AdminAuthenticatedHilfeMarktueberblickRoute =
+  AdminAuthenticatedHilfeMarktueberblickRouteImport.update({
+    id: '/hilfe/marktueberblick',
+    path: '/hilfe/marktueberblick',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
 const AdminAuthenticatedBuchungenNeuRoute =
@@ -189,20 +281,33 @@ export interface FileRoutesByFullPath {
   '/admin/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
-  '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
+  '/admin/stammdaten': typeof AdminAuthenticatedStammdatenRouteWithChildren
   '/admin/test': typeof AdminAuthenticatedTestRoute
   '/admin/themen': typeof AdminAuthenticatedThemenRoute
+  '/admin/verwaltung': typeof AdminAuthenticatedVerwaltungRouteWithChildren
   '/admin/': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
+  '/admin/hilfe/marktueberblick': typeof AdminAuthenticatedHilfeMarktueberblickRoute
   '/admin/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
+  '/admin/stammdaten/angebotsarten': typeof AdminAuthenticatedStammdatenAngebotsartenRoute
+  '/admin/stammdaten/einrichtungstypen': typeof AdminAuthenticatedStammdatenEinrichtungstypenRoute
+  '/admin/stammdaten/raeume': typeof AdminAuthenticatedStammdatenRaeumeRoute
+  '/admin/stammdaten/schliesstage': typeof AdminAuthenticatedStammdatenSchliesstageRoute
+  '/admin/stammdaten/themen': typeof AdminAuthenticatedStammdatenThemenRoute
+  '/admin/verwaltung/einbetten': typeof AdminAuthenticatedVerwaltungEinbettenRoute
+  '/admin/verwaltung/einstellungen': typeof AdminAuthenticatedVerwaltungEinstellungenRoute
+  '/admin/verwaltung/mitarbeiter': typeof AdminAuthenticatedVerwaltungMitarbeiterRoute
   '/admin/buchungen/': typeof AdminAuthenticatedBuchungenIndexRoute
+  '/admin/hilfe/': typeof AdminAuthenticatedHilfeIndexRoute
   '/admin/referenten/': typeof AdminAuthenticatedReferentenIndexRoute
+  '/admin/stammdaten/': typeof AdminAuthenticatedStammdatenIndexRoute
+  '/admin/verwaltung/': typeof AdminAuthenticatedVerwaltungIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -215,7 +320,6 @@ export interface FileRoutesByTo {
   '/admin/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
-  '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
@@ -226,9 +330,21 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminAuthenticatedIndexRoute
   '/admin/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
+  '/admin/hilfe/marktueberblick': typeof AdminAuthenticatedHilfeMarktueberblickRoute
   '/admin/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
+  '/admin/stammdaten/angebotsarten': typeof AdminAuthenticatedStammdatenAngebotsartenRoute
+  '/admin/stammdaten/einrichtungstypen': typeof AdminAuthenticatedStammdatenEinrichtungstypenRoute
+  '/admin/stammdaten/raeume': typeof AdminAuthenticatedStammdatenRaeumeRoute
+  '/admin/stammdaten/schliesstage': typeof AdminAuthenticatedStammdatenSchliesstageRoute
+  '/admin/stammdaten/themen': typeof AdminAuthenticatedStammdatenThemenRoute
+  '/admin/verwaltung/einbetten': typeof AdminAuthenticatedVerwaltungEinbettenRoute
+  '/admin/verwaltung/einstellungen': typeof AdminAuthenticatedVerwaltungEinstellungenRoute
+  '/admin/verwaltung/mitarbeiter': typeof AdminAuthenticatedVerwaltungMitarbeiterRoute
   '/admin/buchungen': typeof AdminAuthenticatedBuchungenIndexRoute
+  '/admin/hilfe': typeof AdminAuthenticatedHilfeIndexRoute
   '/admin/referenten': typeof AdminAuthenticatedReferentenIndexRoute
+  '/admin/stammdaten': typeof AdminAuthenticatedStammdatenIndexRoute
+  '/admin/verwaltung': typeof AdminAuthenticatedVerwaltungIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,20 +359,33 @@ export interface FileRoutesById {
   '/admin/_authenticated/einbetten': typeof AdminAuthenticatedEinbettenRoute
   '/admin/_authenticated/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/_authenticated/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
-  '/admin/_authenticated/hilfe': typeof AdminAuthenticatedHilfeRoute
   '/admin/_authenticated/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/_authenticated/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/_authenticated/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/_authenticated/raeume': typeof AdminAuthenticatedRaeumeRoute
   '/admin/_authenticated/schliesstage': typeof AdminAuthenticatedSchliesstageRoute
+  '/admin/_authenticated/stammdaten': typeof AdminAuthenticatedStammdatenRouteWithChildren
   '/admin/_authenticated/test': typeof AdminAuthenticatedTestRoute
   '/admin/_authenticated/themen': typeof AdminAuthenticatedThemenRoute
+  '/admin/_authenticated/verwaltung': typeof AdminAuthenticatedVerwaltungRouteWithChildren
   '/admin/_authenticated/': typeof AdminAuthenticatedIndexRoute
   '/admin/_authenticated/buchungen/$id': typeof AdminAuthenticatedBuchungenIdRoute
   '/admin/_authenticated/buchungen/neu': typeof AdminAuthenticatedBuchungenNeuRoute
+  '/admin/_authenticated/hilfe/marktueberblick': typeof AdminAuthenticatedHilfeMarktueberblickRoute
   '/admin/_authenticated/referenten/$id': typeof AdminAuthenticatedReferentenIdRoute
+  '/admin/_authenticated/stammdaten/angebotsarten': typeof AdminAuthenticatedStammdatenAngebotsartenRoute
+  '/admin/_authenticated/stammdaten/einrichtungstypen': typeof AdminAuthenticatedStammdatenEinrichtungstypenRoute
+  '/admin/_authenticated/stammdaten/raeume': typeof AdminAuthenticatedStammdatenRaeumeRoute
+  '/admin/_authenticated/stammdaten/schliesstage': typeof AdminAuthenticatedStammdatenSchliesstageRoute
+  '/admin/_authenticated/stammdaten/themen': typeof AdminAuthenticatedStammdatenThemenRoute
+  '/admin/_authenticated/verwaltung/einbetten': typeof AdminAuthenticatedVerwaltungEinbettenRoute
+  '/admin/_authenticated/verwaltung/einstellungen': typeof AdminAuthenticatedVerwaltungEinstellungenRoute
+  '/admin/_authenticated/verwaltung/mitarbeiter': typeof AdminAuthenticatedVerwaltungMitarbeiterRoute
   '/admin/_authenticated/buchungen/': typeof AdminAuthenticatedBuchungenIndexRoute
+  '/admin/_authenticated/hilfe/': typeof AdminAuthenticatedHilfeIndexRoute
   '/admin/_authenticated/referenten/': typeof AdminAuthenticatedReferentenIndexRoute
+  '/admin/_authenticated/stammdaten/': typeof AdminAuthenticatedStammdatenIndexRoute
+  '/admin/_authenticated/verwaltung/': typeof AdminAuthenticatedVerwaltungIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -272,20 +401,33 @@ export interface FileRouteTypes {
     | '/admin/einbetten'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
-    | '/admin/hilfe'
     | '/admin/kalender'
     | '/admin/marktueberblick'
     | '/admin/mitarbeiter'
     | '/admin/raeume'
     | '/admin/schliesstage'
+    | '/admin/stammdaten'
     | '/admin/test'
     | '/admin/themen'
+    | '/admin/verwaltung'
     | '/admin/'
     | '/admin/buchungen/$id'
     | '/admin/buchungen/neu'
+    | '/admin/hilfe/marktueberblick'
     | '/admin/referenten/$id'
+    | '/admin/stammdaten/angebotsarten'
+    | '/admin/stammdaten/einrichtungstypen'
+    | '/admin/stammdaten/raeume'
+    | '/admin/stammdaten/schliesstage'
+    | '/admin/stammdaten/themen'
+    | '/admin/verwaltung/einbetten'
+    | '/admin/verwaltung/einstellungen'
+    | '/admin/verwaltung/mitarbeiter'
     | '/admin/buchungen/'
+    | '/admin/hilfe/'
     | '/admin/referenten/'
+    | '/admin/stammdaten/'
+    | '/admin/verwaltung/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,7 +440,6 @@ export interface FileRouteTypes {
     | '/admin/einbetten'
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
-    | '/admin/hilfe'
     | '/admin/kalender'
     | '/admin/marktueberblick'
     | '/admin/mitarbeiter'
@@ -309,9 +450,21 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/buchungen/$id'
     | '/admin/buchungen/neu'
+    | '/admin/hilfe/marktueberblick'
     | '/admin/referenten/$id'
+    | '/admin/stammdaten/angebotsarten'
+    | '/admin/stammdaten/einrichtungstypen'
+    | '/admin/stammdaten/raeume'
+    | '/admin/stammdaten/schliesstage'
+    | '/admin/stammdaten/themen'
+    | '/admin/verwaltung/einbetten'
+    | '/admin/verwaltung/einstellungen'
+    | '/admin/verwaltung/mitarbeiter'
     | '/admin/buchungen'
+    | '/admin/hilfe'
     | '/admin/referenten'
+    | '/admin/stammdaten'
+    | '/admin/verwaltung'
   id:
     | '__root__'
     | '/'
@@ -325,20 +478,33 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/einbetten'
     | '/admin/_authenticated/einrichtungstypen'
     | '/admin/_authenticated/einstellungen'
-    | '/admin/_authenticated/hilfe'
     | '/admin/_authenticated/kalender'
     | '/admin/_authenticated/marktueberblick'
     | '/admin/_authenticated/mitarbeiter'
     | '/admin/_authenticated/raeume'
     | '/admin/_authenticated/schliesstage'
+    | '/admin/_authenticated/stammdaten'
     | '/admin/_authenticated/test'
     | '/admin/_authenticated/themen'
+    | '/admin/_authenticated/verwaltung'
     | '/admin/_authenticated/'
     | '/admin/_authenticated/buchungen/$id'
     | '/admin/_authenticated/buchungen/neu'
+    | '/admin/_authenticated/hilfe/marktueberblick'
     | '/admin/_authenticated/referenten/$id'
+    | '/admin/_authenticated/stammdaten/angebotsarten'
+    | '/admin/_authenticated/stammdaten/einrichtungstypen'
+    | '/admin/_authenticated/stammdaten/raeume'
+    | '/admin/_authenticated/stammdaten/schliesstage'
+    | '/admin/_authenticated/stammdaten/themen'
+    | '/admin/_authenticated/verwaltung/einbetten'
+    | '/admin/_authenticated/verwaltung/einstellungen'
+    | '/admin/_authenticated/verwaltung/mitarbeiter'
     | '/admin/_authenticated/buchungen/'
+    | '/admin/_authenticated/hilfe/'
     | '/admin/_authenticated/referenten/'
+    | '/admin/_authenticated/stammdaten/'
+    | '/admin/_authenticated/verwaltung/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -401,6 +567,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedIndexRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/verwaltung': {
+      id: '/admin/_authenticated/verwaltung'
+      path: '/verwaltung'
+      fullPath: '/admin/verwaltung'
+      preLoaderRoute: typeof AdminAuthenticatedVerwaltungRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
     '/admin/_authenticated/themen': {
       id: '/admin/_authenticated/themen'
       path: '/themen'
@@ -413,6 +586,13 @@ declare module '@tanstack/react-router' {
       path: '/test'
       fullPath: '/admin/test'
       preLoaderRoute: typeof AdminAuthenticatedTestRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/stammdaten': {
+      id: '/admin/_authenticated/stammdaten'
+      path: '/stammdaten'
+      fullPath: '/admin/stammdaten'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/schliesstage': {
@@ -450,13 +630,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedKalenderRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
-    '/admin/_authenticated/hilfe': {
-      id: '/admin/_authenticated/hilfe'
-      path: '/hilfe'
-      fullPath: '/admin/hilfe'
-      preLoaderRoute: typeof AdminAuthenticatedHilfeRouteImport
-      parentRoute: typeof AdminAuthenticatedRoute
-    }
     '/admin/_authenticated/einstellungen': {
       id: '/admin/_authenticated/einstellungen'
       path: '/einstellungen'
@@ -492,11 +665,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedAngebotsartenRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/verwaltung/': {
+      id: '/admin/_authenticated/verwaltung/'
+      path: '/'
+      fullPath: '/admin/verwaltung/'
+      preLoaderRoute: typeof AdminAuthenticatedVerwaltungIndexRouteImport
+      parentRoute: typeof AdminAuthenticatedVerwaltungRoute
+    }
+    '/admin/_authenticated/stammdaten/': {
+      id: '/admin/_authenticated/stammdaten/'
+      path: '/'
+      fullPath: '/admin/stammdaten/'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenIndexRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
     '/admin/_authenticated/referenten/': {
       id: '/admin/_authenticated/referenten/'
       path: '/referenten'
       fullPath: '/admin/referenten/'
       preLoaderRoute: typeof AdminAuthenticatedReferentenIndexRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/hilfe/': {
+      id: '/admin/_authenticated/hilfe/'
+      path: '/hilfe'
+      fullPath: '/admin/hilfe/'
+      preLoaderRoute: typeof AdminAuthenticatedHilfeIndexRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/buchungen/': {
@@ -506,11 +700,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedBuchungenIndexRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/verwaltung/mitarbeiter': {
+      id: '/admin/_authenticated/verwaltung/mitarbeiter'
+      path: '/mitarbeiter'
+      fullPath: '/admin/verwaltung/mitarbeiter'
+      preLoaderRoute: typeof AdminAuthenticatedVerwaltungMitarbeiterRouteImport
+      parentRoute: typeof AdminAuthenticatedVerwaltungRoute
+    }
+    '/admin/_authenticated/verwaltung/einstellungen': {
+      id: '/admin/_authenticated/verwaltung/einstellungen'
+      path: '/einstellungen'
+      fullPath: '/admin/verwaltung/einstellungen'
+      preLoaderRoute: typeof AdminAuthenticatedVerwaltungEinstellungenRouteImport
+      parentRoute: typeof AdminAuthenticatedVerwaltungRoute
+    }
+    '/admin/_authenticated/verwaltung/einbetten': {
+      id: '/admin/_authenticated/verwaltung/einbetten'
+      path: '/einbetten'
+      fullPath: '/admin/verwaltung/einbetten'
+      preLoaderRoute: typeof AdminAuthenticatedVerwaltungEinbettenRouteImport
+      parentRoute: typeof AdminAuthenticatedVerwaltungRoute
+    }
+    '/admin/_authenticated/stammdaten/themen': {
+      id: '/admin/_authenticated/stammdaten/themen'
+      path: '/themen'
+      fullPath: '/admin/stammdaten/themen'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenThemenRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
+    '/admin/_authenticated/stammdaten/schliesstage': {
+      id: '/admin/_authenticated/stammdaten/schliesstage'
+      path: '/schliesstage'
+      fullPath: '/admin/stammdaten/schliesstage'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenSchliesstageRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
+    '/admin/_authenticated/stammdaten/raeume': {
+      id: '/admin/_authenticated/stammdaten/raeume'
+      path: '/raeume'
+      fullPath: '/admin/stammdaten/raeume'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenRaeumeRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
+    '/admin/_authenticated/stammdaten/einrichtungstypen': {
+      id: '/admin/_authenticated/stammdaten/einrichtungstypen'
+      path: '/einrichtungstypen'
+      fullPath: '/admin/stammdaten/einrichtungstypen'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenEinrichtungstypenRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
+    '/admin/_authenticated/stammdaten/angebotsarten': {
+      id: '/admin/_authenticated/stammdaten/angebotsarten'
+      path: '/angebotsarten'
+      fullPath: '/admin/stammdaten/angebotsarten'
+      preLoaderRoute: typeof AdminAuthenticatedStammdatenAngebotsartenRouteImport
+      parentRoute: typeof AdminAuthenticatedStammdatenRoute
+    }
     '/admin/_authenticated/referenten/$id': {
       id: '/admin/_authenticated/referenten/$id'
       path: '/referenten/$id'
       fullPath: '/admin/referenten/$id'
       preLoaderRoute: typeof AdminAuthenticatedReferentenIdRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
+    '/admin/_authenticated/hilfe/marktueberblick': {
+      id: '/admin/_authenticated/hilfe/marktueberblick'
+      path: '/hilfe/marktueberblick'
+      fullPath: '/admin/hilfe/marktueberblick'
+      preLoaderRoute: typeof AdminAuthenticatedHilfeMarktueberblickRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
     '/admin/_authenticated/buchungen/neu': {
@@ -530,25 +787,82 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminAuthenticatedStammdatenRouteChildren {
+  AdminAuthenticatedStammdatenAngebotsartenRoute: typeof AdminAuthenticatedStammdatenAngebotsartenRoute
+  AdminAuthenticatedStammdatenEinrichtungstypenRoute: typeof AdminAuthenticatedStammdatenEinrichtungstypenRoute
+  AdminAuthenticatedStammdatenRaeumeRoute: typeof AdminAuthenticatedStammdatenRaeumeRoute
+  AdminAuthenticatedStammdatenSchliesstageRoute: typeof AdminAuthenticatedStammdatenSchliesstageRoute
+  AdminAuthenticatedStammdatenThemenRoute: typeof AdminAuthenticatedStammdatenThemenRoute
+  AdminAuthenticatedStammdatenIndexRoute: typeof AdminAuthenticatedStammdatenIndexRoute
+}
+
+const AdminAuthenticatedStammdatenRouteChildren: AdminAuthenticatedStammdatenRouteChildren =
+  {
+    AdminAuthenticatedStammdatenAngebotsartenRoute:
+      AdminAuthenticatedStammdatenAngebotsartenRoute,
+    AdminAuthenticatedStammdatenEinrichtungstypenRoute:
+      AdminAuthenticatedStammdatenEinrichtungstypenRoute,
+    AdminAuthenticatedStammdatenRaeumeRoute:
+      AdminAuthenticatedStammdatenRaeumeRoute,
+    AdminAuthenticatedStammdatenSchliesstageRoute:
+      AdminAuthenticatedStammdatenSchliesstageRoute,
+    AdminAuthenticatedStammdatenThemenRoute:
+      AdminAuthenticatedStammdatenThemenRoute,
+    AdminAuthenticatedStammdatenIndexRoute:
+      AdminAuthenticatedStammdatenIndexRoute,
+  }
+
+const AdminAuthenticatedStammdatenRouteWithChildren =
+  AdminAuthenticatedStammdatenRoute._addFileChildren(
+    AdminAuthenticatedStammdatenRouteChildren,
+  )
+
+interface AdminAuthenticatedVerwaltungRouteChildren {
+  AdminAuthenticatedVerwaltungEinbettenRoute: typeof AdminAuthenticatedVerwaltungEinbettenRoute
+  AdminAuthenticatedVerwaltungEinstellungenRoute: typeof AdminAuthenticatedVerwaltungEinstellungenRoute
+  AdminAuthenticatedVerwaltungMitarbeiterRoute: typeof AdminAuthenticatedVerwaltungMitarbeiterRoute
+  AdminAuthenticatedVerwaltungIndexRoute: typeof AdminAuthenticatedVerwaltungIndexRoute
+}
+
+const AdminAuthenticatedVerwaltungRouteChildren: AdminAuthenticatedVerwaltungRouteChildren =
+  {
+    AdminAuthenticatedVerwaltungEinbettenRoute:
+      AdminAuthenticatedVerwaltungEinbettenRoute,
+    AdminAuthenticatedVerwaltungEinstellungenRoute:
+      AdminAuthenticatedVerwaltungEinstellungenRoute,
+    AdminAuthenticatedVerwaltungMitarbeiterRoute:
+      AdminAuthenticatedVerwaltungMitarbeiterRoute,
+    AdminAuthenticatedVerwaltungIndexRoute:
+      AdminAuthenticatedVerwaltungIndexRoute,
+  }
+
+const AdminAuthenticatedVerwaltungRouteWithChildren =
+  AdminAuthenticatedVerwaltungRoute._addFileChildren(
+    AdminAuthenticatedVerwaltungRouteChildren,
+  )
+
 interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedAngebotsartenRoute: typeof AdminAuthenticatedAngebotsartenRoute
   AdminAuthenticatedAuswertungenRoute: typeof AdminAuthenticatedAuswertungenRoute
   AdminAuthenticatedEinbettenRoute: typeof AdminAuthenticatedEinbettenRoute
   AdminAuthenticatedEinrichtungstypenRoute: typeof AdminAuthenticatedEinrichtungstypenRoute
   AdminAuthenticatedEinstellungenRoute: typeof AdminAuthenticatedEinstellungenRoute
-  AdminAuthenticatedHilfeRoute: typeof AdminAuthenticatedHilfeRoute
   AdminAuthenticatedKalenderRoute: typeof AdminAuthenticatedKalenderRoute
   AdminAuthenticatedMarktueberblickRoute: typeof AdminAuthenticatedMarktueberblickRoute
   AdminAuthenticatedMitarbeiterRoute: typeof AdminAuthenticatedMitarbeiterRoute
   AdminAuthenticatedRaeumeRoute: typeof AdminAuthenticatedRaeumeRoute
   AdminAuthenticatedSchliesstageRoute: typeof AdminAuthenticatedSchliesstageRoute
+  AdminAuthenticatedStammdatenRoute: typeof AdminAuthenticatedStammdatenRouteWithChildren
   AdminAuthenticatedTestRoute: typeof AdminAuthenticatedTestRoute
   AdminAuthenticatedThemenRoute: typeof AdminAuthenticatedThemenRoute
+  AdminAuthenticatedVerwaltungRoute: typeof AdminAuthenticatedVerwaltungRouteWithChildren
   AdminAuthenticatedIndexRoute: typeof AdminAuthenticatedIndexRoute
   AdminAuthenticatedBuchungenIdRoute: typeof AdminAuthenticatedBuchungenIdRoute
   AdminAuthenticatedBuchungenNeuRoute: typeof AdminAuthenticatedBuchungenNeuRoute
+  AdminAuthenticatedHilfeMarktueberblickRoute: typeof AdminAuthenticatedHilfeMarktueberblickRoute
   AdminAuthenticatedReferentenIdRoute: typeof AdminAuthenticatedReferentenIdRoute
   AdminAuthenticatedBuchungenIndexRoute: typeof AdminAuthenticatedBuchungenIndexRoute
+  AdminAuthenticatedHilfeIndexRoute: typeof AdminAuthenticatedHilfeIndexRoute
   AdminAuthenticatedReferentenIndexRoute: typeof AdminAuthenticatedReferentenIndexRoute
 }
 
@@ -559,20 +873,26 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
   AdminAuthenticatedEinrichtungstypenRoute:
     AdminAuthenticatedEinrichtungstypenRoute,
   AdminAuthenticatedEinstellungenRoute: AdminAuthenticatedEinstellungenRoute,
-  AdminAuthenticatedHilfeRoute: AdminAuthenticatedHilfeRoute,
   AdminAuthenticatedKalenderRoute: AdminAuthenticatedKalenderRoute,
   AdminAuthenticatedMarktueberblickRoute:
     AdminAuthenticatedMarktueberblickRoute,
   AdminAuthenticatedMitarbeiterRoute: AdminAuthenticatedMitarbeiterRoute,
   AdminAuthenticatedRaeumeRoute: AdminAuthenticatedRaeumeRoute,
   AdminAuthenticatedSchliesstageRoute: AdminAuthenticatedSchliesstageRoute,
+  AdminAuthenticatedStammdatenRoute:
+    AdminAuthenticatedStammdatenRouteWithChildren,
   AdminAuthenticatedTestRoute: AdminAuthenticatedTestRoute,
   AdminAuthenticatedThemenRoute: AdminAuthenticatedThemenRoute,
+  AdminAuthenticatedVerwaltungRoute:
+    AdminAuthenticatedVerwaltungRouteWithChildren,
   AdminAuthenticatedIndexRoute: AdminAuthenticatedIndexRoute,
   AdminAuthenticatedBuchungenIdRoute: AdminAuthenticatedBuchungenIdRoute,
   AdminAuthenticatedBuchungenNeuRoute: AdminAuthenticatedBuchungenNeuRoute,
+  AdminAuthenticatedHilfeMarktueberblickRoute:
+    AdminAuthenticatedHilfeMarktueberblickRoute,
   AdminAuthenticatedReferentenIdRoute: AdminAuthenticatedReferentenIdRoute,
   AdminAuthenticatedBuchungenIndexRoute: AdminAuthenticatedBuchungenIndexRoute,
+  AdminAuthenticatedHilfeIndexRoute: AdminAuthenticatedHilfeIndexRoute,
   AdminAuthenticatedReferentenIndexRoute:
     AdminAuthenticatedReferentenIndexRoute,
 }

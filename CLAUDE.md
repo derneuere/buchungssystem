@@ -25,10 +25,23 @@ Das System-`node` ist v16 (zu alt) und System-`go` ist 1.13 (zu alt). Nutze:
 ## Struktur
 - `src/routes/` — file-based routing. `index.tsx` (öffentlich), `embed.tsx`
   (chromeless, iFrame), `buchung/`, `admin/*` (mitarbeiter-Login).
+  **Route-Dateien sind dünn**: Route-Definition, Search-Schema, Rollen-Weiche —
+  Seiten-UI lebt in `src/components/admin/<feature>/`. Alt-URLs (z.B.
+  `/admin/raeume`, `/admin/kalender`) bleiben als Redirect-Stubs erhalten.
 - `src/components/ui/` — shadcn (bereits vorhanden, NICHT via CLI neu adden).
-- `src/components/booking/`, `src/components/admin/`.
+- `src/components/booking/` — öffentlicher Buchungs-Wizard.
+- `src/components/admin/` — Feature-Ordner: `shell/` (AdminShell, RouteTabs),
+  `shared/` (nur Bausteine mit ≥2 Feature-Nutzern: StatusBadge,
+  ConfirmDeleteDialog, GrundDialog, ZeitraumPicker), `buchungen/`, `dashboard/`,
+  `referenten/`, `stammdaten/` (generisches `StammdatenCrud` + Config-Tabs),
+  `verwaltung/`.
+- Tab-Seiten sind Kind-Routen: `/admin/stammdaten/<tab>` (Themen, Angebotsarten,
+  Räume, Einrichtungstypen, Schließtage) und `/admin/verwaltung/<tab>`
+  (Einstellungen, Mitarbeiter [nur Leitung], Einbetten); Buchungen-Liste und
+  -Kalender teilen sich `/admin/buchungen` über den Search-Param `ansicht`.
 - `src/lib/` — `pocketbase.ts` (`pb`), `api.ts` (Custom-Routen), `types.ts`
-  (alle Record-/Contract-Typen), `query.ts`, `utils.ts` (`cn`).
+  (alle Record-/Contract-Typen), `query.ts` (QueryClient + `adminKeys`),
+  `utils.ts` (`cn`).
 - `pb_hooks/` — Go: `main.go`, `routes_*`, `service_*`, `migrations/`.
 
 ## Konventionen

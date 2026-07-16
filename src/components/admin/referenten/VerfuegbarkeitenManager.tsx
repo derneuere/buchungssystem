@@ -21,8 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog'
-import { ZeitraumPicker } from '@/components/admin/ZeitraumPicker'
+import { ConfirmDeleteDialog } from '@/components/admin/shared/ConfirmDeleteDialog'
+import { ZeitraumPicker } from '@/components/admin/shared/ZeitraumPicker'
 
 type Form = {
   art: VerfuegbarkeitArt
