@@ -22,6 +22,7 @@ import { Route as AdminAuthenticatedSchliesstageRouteImport } from './routes/adm
 import { Route as AdminAuthenticatedRaeumeRouteImport } from './routes/admin/_authenticated/raeume'
 import { Route as AdminAuthenticatedMitarbeiterRouteImport } from './routes/admin/_authenticated/mitarbeiter'
 import { Route as AdminAuthenticatedMarktueberblickRouteImport } from './routes/admin/_authenticated/marktueberblick'
+import { Route as AdminAuthenticatedKalenderRouteImport } from './routes/admin/_authenticated/kalender'
 import { Route as AdminAuthenticatedHilfeRouteImport } from './routes/admin/_authenticated/hilfe'
 import { Route as AdminAuthenticatedEinstellungenRouteImport } from './routes/admin/_authenticated/einstellungen'
 import { Route as AdminAuthenticatedEinrichtungstypenRouteImport } from './routes/admin/_authenticated/einrichtungstypen'
@@ -104,6 +105,12 @@ const AdminAuthenticatedMarktueberblickRoute =
     path: '/marktueberblick',
     getParentRoute: () => AdminAuthenticatedRoute,
   } as any)
+const AdminAuthenticatedKalenderRoute =
+  AdminAuthenticatedKalenderRouteImport.update({
+    id: '/kalender',
+    path: '/kalender',
+    getParentRoute: () => AdminAuthenticatedRoute,
+  } as any)
 const AdminAuthenticatedHilfeRoute = AdminAuthenticatedHilfeRouteImport.update({
   id: '/hilfe',
   path: '/hilfe',
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
   '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
+  '/admin/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
@@ -208,6 +216,7 @@ export interface FileRoutesByTo {
   '/admin/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
   '/admin/hilfe': typeof AdminAuthenticatedHilfeRoute
+  '/admin/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/raeume': typeof AdminAuthenticatedRaeumeRoute
@@ -235,6 +244,7 @@ export interface FileRoutesById {
   '/admin/_authenticated/einrichtungstypen': typeof AdminAuthenticatedEinrichtungstypenRoute
   '/admin/_authenticated/einstellungen': typeof AdminAuthenticatedEinstellungenRoute
   '/admin/_authenticated/hilfe': typeof AdminAuthenticatedHilfeRoute
+  '/admin/_authenticated/kalender': typeof AdminAuthenticatedKalenderRoute
   '/admin/_authenticated/marktueberblick': typeof AdminAuthenticatedMarktueberblickRoute
   '/admin/_authenticated/mitarbeiter': typeof AdminAuthenticatedMitarbeiterRoute
   '/admin/_authenticated/raeume': typeof AdminAuthenticatedRaeumeRoute
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
     | '/admin/hilfe'
+    | '/admin/kalender'
     | '/admin/marktueberblick'
     | '/admin/mitarbeiter'
     | '/admin/raeume'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/admin/einrichtungstypen'
     | '/admin/einstellungen'
     | '/admin/hilfe'
+    | '/admin/kalender'
     | '/admin/marktueberblick'
     | '/admin/mitarbeiter'
     | '/admin/raeume'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/admin/_authenticated/einrichtungstypen'
     | '/admin/_authenticated/einstellungen'
     | '/admin/_authenticated/hilfe'
+    | '/admin/_authenticated/kalender'
     | '/admin/_authenticated/marktueberblick'
     | '/admin/_authenticated/mitarbeiter'
     | '/admin/_authenticated/raeume'
@@ -430,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuthenticatedMarktueberblickRouteImport
       parentRoute: typeof AdminAuthenticatedRoute
     }
+    '/admin/_authenticated/kalender': {
+      id: '/admin/_authenticated/kalender'
+      path: '/kalender'
+      fullPath: '/admin/kalender'
+      preLoaderRoute: typeof AdminAuthenticatedKalenderRouteImport
+      parentRoute: typeof AdminAuthenticatedRoute
+    }
     '/admin/_authenticated/hilfe': {
       id: '/admin/_authenticated/hilfe'
       path: '/hilfe'
@@ -517,6 +537,7 @@ interface AdminAuthenticatedRouteChildren {
   AdminAuthenticatedEinrichtungstypenRoute: typeof AdminAuthenticatedEinrichtungstypenRoute
   AdminAuthenticatedEinstellungenRoute: typeof AdminAuthenticatedEinstellungenRoute
   AdminAuthenticatedHilfeRoute: typeof AdminAuthenticatedHilfeRoute
+  AdminAuthenticatedKalenderRoute: typeof AdminAuthenticatedKalenderRoute
   AdminAuthenticatedMarktueberblickRoute: typeof AdminAuthenticatedMarktueberblickRoute
   AdminAuthenticatedMitarbeiterRoute: typeof AdminAuthenticatedMitarbeiterRoute
   AdminAuthenticatedRaeumeRoute: typeof AdminAuthenticatedRaeumeRoute
@@ -539,6 +560,7 @@ const AdminAuthenticatedRouteChildren: AdminAuthenticatedRouteChildren = {
     AdminAuthenticatedEinrichtungstypenRoute,
   AdminAuthenticatedEinstellungenRoute: AdminAuthenticatedEinstellungenRoute,
   AdminAuthenticatedHilfeRoute: AdminAuthenticatedHilfeRoute,
+  AdminAuthenticatedKalenderRoute: AdminAuthenticatedKalenderRoute,
   AdminAuthenticatedMarktueberblickRoute:
     AdminAuthenticatedMarktueberblickRoute,
   AdminAuthenticatedMitarbeiterRoute: AdminAuthenticatedMitarbeiterRoute,

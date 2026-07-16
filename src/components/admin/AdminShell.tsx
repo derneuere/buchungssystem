@@ -8,6 +8,7 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
+  Calendar,
   CalendarClock,
   CalendarDays,
   ClipboardList,
@@ -56,6 +57,7 @@ const ROLLE_LABEL: Record<Rolle, string> = {
 const HAUPTNAVIGATION: NavItem[] = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true }, // alle drei Rollen
   { to: '/admin/buchungen', label: 'Buchungen', icon: ClipboardList }, // alle drei Rollen
+  { to: '/admin/kalender', label: 'Kalender', icon: Calendar, rollen: PERSONAL },
   { to: '/admin/auswertungen', label: 'Auswertungen', icon: LineChart, rollen: PERSONAL },
 ]
 
