@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -42,6 +42,7 @@ function isoAusLokal(datum: string, zeit: string): string | null {
 
 function NeueBuchungPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const angebotsartenQuery = useQuery({
     queryKey: ['admin', 'angebotsarten', 'aktiv'],
@@ -121,6 +122,9 @@ function NeueBuchungPage() {
         interne_notiz: interneNotiz.trim() || undefined,
       })
       toast.success('Buchung angelegt. Bitte jetzt Referent:innen einplanen.')
+      // Liste + Dashboard spiegeln die neue Buchung sofort wider.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'buchungen', 'liste'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
       await navigate({ to: '/admin/buchungen/$id', params: { id: res.id } })
     } catch (err) {
       toast.error(getErrorMessage(err, 'Anlegen fehlgeschlagen.'))

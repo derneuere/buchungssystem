@@ -4,16 +4,24 @@
 // Vorschlags-Ergebnis erscheint nur auf Klick, damit es bei bereits erfolgter
 // Zuweisung nicht im Weg steht.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronsUpDown, Loader2, Sparkles, TriangleAlert, X } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, Sparkles, TriangleAlert, UserPlus, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { pb } from '@/lib/pocketbase'
-import { adminReferentPruefen, adminVorschlag } from '@/lib/api'
+import { adminReferentPruefen, adminReferentenKandidaten, adminVorschlag } from '@/lib/api'
 import { getErrorMessage } from '@/lib/admin-errors'
 import { berechneBenoetigteReferenten } from '@/lib/admin-planung'
-import type { Angebotsart, Buchung, BuchungReferent, PruefeResult, Referent, VorschlagResult } from '@/lib/types'
+import type {
+  Angebotsart,
+  Buchung,
+  BuchungReferent,
+  PruefeResult,
+  ReferentKandidat,
+  ReferentVorschlag,
+  VorschlagResult,
+} from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 import { Button } from '@/components/ui/button'
@@ -33,8 +41,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
+import { AuslastungBadge, EignungBadge } from '@/components/admin/ReferentKandidatBadges'
 
 const QUELLE_LABEL: Record<string, string> = { auto: 'Automatisch', manuell: 'Manuell' }
+
+/** Minimale zuweisbare Referenten-Kennung (Kandidat:in oder Vorschlag). */
+type Zuweisbar = { id: string; name: string }
 
 export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
   const queryClient = useQueryClient()
@@ -52,23 +64,45 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
       }),
   })
 
-  const referentenQuery = useQuery({
-    queryKey: ['admin', 'referenten', 'aktiv'],
-    queryFn: () => pb.collection('referenten').getFullList<Referent>({ filter: 'aktiv = true', sort: 'name' }),
+  // Kandidat:innen inkl. Auslastungs-Kennzahlen — geteilter Query-Key mit dem
+  // BestaetigenDialog, damit beide Ansichten synchron bleiben.
+  const kandidatenKey = ['admin', 'kandidaten', buchung.id]
+  const kandidatenQuery = useQuery({
+    queryKey: kandidatenKey,
+    queryFn: () => adminReferentenKandidaten(buchung.id),
   })
 
   const zuordnungen = zuordnungenQuery.data ?? []
   const sollListe = zuordnungen.filter((z) => z.geplant)
   const zugewieseneIds = new Set(zuordnungen.map((z) => z.referent))
 
+  const kandidaten = kandidatenQuery.data?.kandidaten ?? []
+  const kandidatById = useMemo(
+    () => new Map(kandidaten.map((k) => [k.id, k])),
+    [kandidaten],
+  )
+
   function invalidateZuordnungen() {
     queryClient.invalidateQueries({ queryKey: zuordnungenKey })
+    // Kandidaten-Kennzahlen + Header-Badges (Unterbesetzt/Raum offen) mitziehen.
+    queryClient.invalidateQueries({ queryKey: kandidatenKey })
+    queryClient.invalidateQueries({ queryKey: ['admin', 'buchung', buchung.id] })
   }
 
   // ---- Automatischer Vorschlag ---------------------------------------------
   const [vorschlagResult, setVorschlagResult] = useState<VorschlagResult | null>(null)
   const [vorschlagLoading, setVorschlagLoading] = useState(false)
   const [uebernehmenLoading, setUebernehmenLoading] = useState(false)
+
+  // Sobald sich die Zuordnungen ändern, ist ein zuvor berechneter Vorschlag
+  // veraltet und wird verworfen (Fix: Stale Vorschlag).
+  const zuordnungenSig = zuordnungen
+    .map((z) => z.referent)
+    .sort()
+    .join(',')
+  useEffect(() => {
+    setVorschlagResult(null)
+  }, [zuordnungenSig])
 
   async function handleVorschlag() {
     setVorschlagLoading(true)
@@ -87,26 +121,45 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
     const neue = vorschlagResult.vorschlag.filter((v) => !zugewieseneIds.has(v.id))
     if (neue.length === 0) {
       toast.info('Alle vorgeschlagenen Referent:innen sind bereits zugewiesen.')
+      setVorschlagResult(null)
       return
     }
     setUebernehmenLoading(true)
     try {
-      for (const v of neue) {
-        await pb.collection('buchung_referenten').create({
-          buchung: buchung.id,
-          referent: v.id,
-          geplant: true,
-          eingesetzt: false,
-          quelle: 'auto',
-        })
+      const results = await Promise.allSettled(
+        neue.map((v) =>
+          pb.collection('buchung_referenten').create({
+            buchung: buchung.id,
+            referent: v.id,
+            geplant: true,
+            eingesetzt: false,
+            quelle: 'auto',
+          }),
+        ),
+      )
+      const erfolg = results.filter((r) => r.status === 'fulfilled').length
+      const fehler = results
+        .map((r, i) => ({ r, v: neue[i] }))
+        .filter((x): x is { r: PromiseRejectedResult; v: ReferentVorschlag } => x.r.status === 'rejected')
+
+      if (fehler.length === 0) {
+        toast.success(`${erfolg} Referent:in(nen) übernommen.`)
+        setVorschlagResult(null)
+      } else {
+        const ersterFehler = getErrorMessage(fehler[0].r.reason, 'Zuweisen fehlgeschlagen.')
+        const namen = fehler.map((f) => f.v.name).join(', ')
+        if (erfolg === 0) {
+          toast.error(`Übernehmen fehlgeschlagen (${namen}): ${ersterFehler}`)
+        } else {
+          toast.warning(
+            `${erfolg} von ${neue.length} zugewiesen, ${fehler.length} fehlgeschlagen (${namen}): ${ersterFehler}`,
+          )
+        }
       }
-      toast.success(`${neue.length} Referent:in(nen) übernommen.`)
-      setVorschlagResult(null)
-      invalidateZuordnungen()
-    } catch (err) {
-      toast.error(getErrorMessage(err, 'Übernehmen fehlgeschlagen.'))
     } finally {
       setUebernehmenLoading(false)
+      // Immer neu laden — auch bei Teilfehlern zeigt die UI so den echten Stand.
+      invalidateZuordnungen()
     }
   }
 
@@ -129,17 +182,17 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
   // ---- Hinzufügen (Combobox + Live-Check) -----------------------------------
   const [comboOpen, setComboOpen] = useState(false)
   const [pruefLoadingId, setPruefLoadingId] = useState<string | null>(null)
-  const [hartKonflikt, setHartKonflikt] = useState<{ referent: Referent; ergebnis: PruefeResult } | null>(null)
+  const [hartKonflikt, setHartKonflikt] = useState<{ referent: Zuweisbar; ergebnis: PruefeResult } | null>(null)
 
-  const kandidaten = useMemo(() => {
-    const alle = (referentenQuery.data ?? []).filter((r) => !zugewieseneIds.has(r.id))
-    const passend = alle.filter((r) => r.themen?.includes(buchung.thema))
-    const andere = alle.filter((r) => !r.themen?.includes(buchung.thema))
+  const auswahl = useMemo(() => {
+    const offen = kandidaten.filter((k) => !zugewieseneIds.has(k.id))
+    const passend = offen.filter((k) => k.themaMatch)
+    const andere = offen.filter((k) => !k.themaMatch)
     return { passend, andere }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [referentenQuery.data, buchung.thema, zuordnungen])
+  }, [kandidaten, zuordnungen])
 
-  async function addReferent(referent: Referent, quelle: 'auto' | 'manuell' = 'manuell') {
+  async function addReferent(referent: Zuweisbar, quelle: 'auto' | 'manuell' = 'manuell') {
     try {
       await pb.collection('buchung_referenten').create({
         buchung: buchung.id,
@@ -155,7 +208,7 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
     }
   }
 
-  async function handleSelectKandidat(referent: Referent) {
+  async function handleSelectKandidat(referent: Zuweisbar) {
     setComboOpen(false)
     setPruefLoadingId(referent.id)
     try {
@@ -178,6 +231,7 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
   }
 
   const bedarfErfuellt = sollListe.length >= benoetigt
+  const pruefeBusy = pruefLoadingId !== null
 
   return (
     <>
@@ -284,9 +338,15 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
                     <span className="text-sm text-muted-foreground">Keine geeigneten Referent:innen gefunden.</span>
                   )}
                   {vorschlagResult.vorschlag.map((v) => (
-                    <Badge key={v.id} variant="secondary">
-                      {v.name}
-                    </Badge>
+                    <VorschlagChip
+                      key={v.id}
+                      v={v}
+                      kandidat={kandidatById.get(v.id)}
+                      assigned={zugewieseneIds.has(v.id)}
+                      loading={pruefLoadingId === v.id}
+                      disabled={pruefeBusy}
+                      onClick={() => void handleSelectKandidat({ id: v.id, name: v.name })}
+                    />
                   ))}
                 </div>
               </div>
@@ -295,9 +355,15 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
                   <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">Alternativen</p>
                   <div className="flex flex-wrap gap-1.5">
                     {vorschlagResult.alternativen.map((v) => (
-                      <Badge key={v.id} variant="outline">
-                        {v.name}
-                      </Badge>
+                      <VorschlagChip
+                        key={v.id}
+                        v={v}
+                        kandidat={kandidatById.get(v.id)}
+                        assigned={zugewieseneIds.has(v.id)}
+                        loading={pruefLoadingId === v.id}
+                        disabled={pruefeBusy}
+                        onClick={() => void handleSelectKandidat({ id: v.id, name: v.name })}
+                      />
                     ))}
                   </div>
                 </div>
@@ -330,43 +396,62 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
 
           <Popover open={comboOpen} onOpenChange={setComboOpen}>
             <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="w-full justify-between sm:w-72">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full justify-between sm:w-72"
+                disabled={pruefeBusy}
+              >
                 Referent:in hinzufügen
-                <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                {pruefeBusy ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <ChevronsUpDown className="h-4 w-4 opacity-50" />
+                )}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
+            <PopoverContent className="w-80 p-0" align="start">
               <Command>
                 <CommandInput placeholder="Referent:in suchen …" />
                 <CommandList>
-                  <CommandEmpty>Keine passenden Referent:innen.</CommandEmpty>
-                  {kandidaten.passend.length > 0 && (
-                    <CommandGroup heading="Passend zum Thema">
-                      {kandidaten.passend.map((r) => (
-                        <CommandItem key={r.id} value={r.name} onSelect={() => handleSelectKandidat(r)}>
-                          {pruefLoadingId === r.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                          ) : (
-                            <Check className="h-4 w-4 opacity-0" aria-hidden="true" />
-                          )}
-                          {r.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  )}
-                  {kandidaten.andere.length > 0 && (
-                    <CommandGroup heading="Weitere Referent:innen (Thema ggf. nicht hinterlegt)">
-                      {kandidaten.andere.map((r) => (
-                        <CommandItem key={r.id} value={r.name} onSelect={() => handleSelectKandidat(r)}>
-                          {pruefLoadingId === r.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                          ) : (
-                            <TriangleAlert className="h-4 w-4 text-amber-500" aria-hidden="true" />
-                          )}
-                          {r.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                  {kandidatenQuery.isLoading ? (
+                    <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      Referent:innen werden geladen …
+                    </div>
+                  ) : kandidatenQuery.isError ? (
+                    <div className="py-6 text-center text-sm text-destructive">
+                      Referent:innen konnten nicht geladen werden.
+                    </div>
+                  ) : (
+                    <>
+                      <CommandEmpty>Keine passenden Referent:innen.</CommandEmpty>
+                      {auswahl.passend.length > 0 && (
+                        <CommandGroup heading="Passend zum Thema">
+                          {auswahl.passend.map((k) => (
+                            <KandidatItem
+                              key={k.id}
+                              k={k}
+                              loading={pruefLoadingId === k.id}
+                              onSelect={() => handleSelectKandidat({ id: k.id, name: k.name })}
+                            />
+                          ))}
+                        </CommandGroup>
+                      )}
+                      {auswahl.andere.length > 0 && (
+                        <CommandGroup heading="Weitere Referent:innen (Thema ggf. nicht hinterlegt)">
+                          {auswahl.andere.map((k) => (
+                            <KandidatItem
+                              key={k.id}
+                              k={k}
+                              loading={pruefLoadingId === k.id}
+                              onSelect={() => handleSelectKandidat({ id: k.id, name: k.name })}
+                            />
+                          ))}
+                        </CommandGroup>
+                      )}
+                    </>
                   )}
                 </CommandList>
               </Command>
@@ -399,5 +484,76 @@ export function BuchungReferentenPlanung({ buchung }: { buchung: Buchung }) {
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+/** Combobox-Zeile für eine:n Kandidat:in inkl. Eignungs-/Auslastungs-Badge. */
+function KandidatItem({
+  k,
+  loading,
+  onSelect,
+}: {
+  k: ReferentKandidat
+  loading: boolean
+  onSelect: () => void
+}) {
+  return (
+    <CommandItem value={k.name} onSelect={onSelect} className="gap-2">
+      {loading ? (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+      ) : k.themaMatch ? (
+        <Check className="h-4 w-4 shrink-0 opacity-0" aria-hidden="true" />
+      ) : (
+        <TriangleAlert className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />
+      )}
+      <span className="min-w-0 flex-1 truncate">{k.name}</span>
+      <EignungBadge k={k} />
+      <AuslastungBadge rel={k.auslastung_relativ} />
+    </CommandItem>
+  )
+}
+
+/** Klickbarer Chip im Vorschlags-Panel — weist mit derselben Konfliktprüfung zu. */
+function VorschlagChip({
+  v,
+  kandidat,
+  assigned,
+  loading,
+  disabled,
+  onClick,
+}: {
+  v: ReferentVorschlag
+  kandidat?: ReferentKandidat
+  assigned: boolean
+  loading: boolean
+  disabled: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={assigned || disabled}
+      title={assigned ? 'Bereits zugewiesen' : 'Zum Zuweisen klicken (mit Konfliktprüfung)'}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-sm transition-colors',
+        assigned ? 'opacity-60' : 'hover:bg-accent',
+        'disabled:cursor-not-allowed',
+      )}
+    >
+      {assigned ? (
+        <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+      ) : loading ? (
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+      ) : (
+        <UserPlus className="h-4 w-4 shrink-0" aria-hidden="true" />
+      )}
+      <span className="font-medium">{v.name}</span>
+      {kandidat && <EignungBadge k={kandidat} />}
+      {kandidat && <AuslastungBadge rel={kandidat.auslastung_relativ} />}
+      {typeof v.auslastung === 'number' && (
+        <span className="text-xs text-muted-foreground">Ausl. {v.auslastung}</span>
+      )}
+    </button>
   )
 }

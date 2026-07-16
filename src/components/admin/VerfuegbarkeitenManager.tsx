@@ -101,6 +101,21 @@ export function VerfuegbarkeitenManager({
       toast.error('Bitte Wochentag, Uhrzeiten und Gültig-ab-Datum angeben.')
       return
     }
+    // Reihenfolge-Prüfungen (gleiches Format je Feld ⇒ lexikografischer Vergleich genügt).
+    if (form.wiederholung === 'einmalig' && form.ende <= form.start) {
+      toast.error('Das Ende muss nach dem Start liegen.')
+      return
+    }
+    if (form.wiederholung === 'woechentlich') {
+      if (form.zeit_bis <= form.zeit_von) {
+        toast.error('Die Bis-Uhrzeit muss nach der Von-Uhrzeit liegen.')
+        return
+      }
+      if (form.gueltig_bis && form.gueltig_bis < form.gueltig_ab) {
+        toast.error('„Gültig bis" darf nicht vor „Gültig ab" liegen.')
+        return
+      }
+    }
     setSaving(true)
     try {
       const body: Record<string, unknown> = {
