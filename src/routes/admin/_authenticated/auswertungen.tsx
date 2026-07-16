@@ -1,18 +1,28 @@
 // /admin/auswertungen — recharts-Dashboards mit Datumsbereichs-Filter (SPEC §5.4).
-// Bewusste Vereinfachung: `reportSollIst` (src/lib/api.ts) nimmt laut Contract
-// nur `{von,bis}` entgegen — die in §5.4 erwähnten Status-/Angebotsart-Filter
-// für die Zeitreihe sind darüber nicht verfügbar (keine Änderung an api.ts
-// laut Auftrag erlaubt).
+// Die Zeitreihe „Buchungen je Monat" hat einen eigenen Endpoint
+// (/api/admin/reports/buchungen-zeitreihe) mit Status-/Angebotsart-Filter und
+// zählt über ALLE Status — im Gegensatz zur soll-ist-Reihe (nur
+// bestätigt/durchgeführt), die weiterhin „Geplant vs. Ist" speist.
 
 import { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { format, subMonths } from 'date-fns'
+import { TriangleAlert } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 
-import { reportHerkunft, reportReferentenAuslastung, reportSollIst } from '@/lib/api'
+import { pb } from '@/lib/pocketbase'
+import type { Angebotsart } from '@/lib/types'
+import { STATUS_LABEL } from '@/lib/types'
+import {
+  reportBuchungenZeitreihe,
+  reportHerkunft,
+  reportReferentenAuslastung,
+  reportSollIst,
+} from '@/lib/api'
 import { bundeslandLabel } from '@/lib/admin-format'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,6 +37,8 @@ export const Route = createFileRoute('/admin/_authenticated/auswertungen')({
 
 type HerkunftGruppierung = 'bundesland' | 'land' | 'einrichtungstyp'
 type AuslastungMetrik = 'einsaetze' | 'stunden'
+
+const ALLE = '__alle__'
 
 function defaultVon(): string {
   return format(subMonths(new Date(), 6), 'yyyy-MM-dd')
@@ -55,6 +67,13 @@ function AuswertungenPage() {
   const [bis, setBis] = useState(defaultBis())
   const [gruppierenNach, setGruppierenNach] = useState<HerkunftGruppierung>('bundesland')
   const [auslastungMetrik, setAuslastungMetrik] = useState<AuslastungMetrik>('einsaetze')
+  const [zeitreiheStatus, setZeitreiheStatus] = useState<string>(ALLE)
+  const [zeitreiheAngebotsart, setZeitreiheAngebotsart] = useState<string>(ALLE)
+
+  const angebotsartenQuery = useQuery({
+    queryKey: ['admin', 'angebotsarten', 'alle'],
+    queryFn: () => pb.collection('angebotsarten').getFullList<Angebotsart>({ sort: 'sort_order' }),
+  })
 
   // Die Report-Endpoints erwarten das Datum als YYYY-MM-DD (Berlin-lokal,
   // inklusive) und rechnen selbst nach UTC um (routes_admin_reports.go,
@@ -73,6 +92,17 @@ function AuswertungenPage() {
   const auslastungQuery = useQuery({
     queryKey: ['admin', 'reports', 'referenten-auslastung', von, bis],
     queryFn: () => reportReferentenAuslastung({ von, bis }),
+  })
+
+  const zeitreiheQuery = useQuery({
+    queryKey: ['admin', 'reports', 'buchungen-zeitreihe', von, bis, zeitreiheStatus, zeitreiheAngebotsart],
+    queryFn: () =>
+      reportBuchungenZeitreihe({
+        von,
+        bis,
+        status: zeitreiheStatus === ALLE ? undefined : zeitreiheStatus,
+        angebotsart: zeitreiheAngebotsart === ALLE ? undefined : zeitreiheAngebotsart,
+      }),
   })
 
   const herkunftDaten = useMemo(
@@ -136,6 +166,8 @@ function AuswertungenPage() {
           <CardContent>
             {herkunftQuery.isLoading ? (
               <Skeleton className="aspect-video w-full" />
+            ) : herkunftQuery.isError ? (
+              <ErrorState />
             ) : herkunftDaten.length === 0 ? (
               <EmptyState />
             ) : (
@@ -153,7 +185,18 @@ function AuswertungenPage() {
                     height={60}
                   />
                   <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={36} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value, payload) => {
+                          const anzahl = payload?.[0]?.payload?.anzahl
+                          return typeof anzahl === 'number'
+                            ? `${value} · ${anzahl} ${anzahl === 1 ? 'Buchung' : 'Buchungen'}`
+                            : value
+                        }}
+                      />
+                    }
+                  />
                   <Bar dataKey="teilnehmer" fill="var(--color-teilnehmer)" radius={4} />
                 </BarChart>
               </ChartContainer>
@@ -174,6 +217,8 @@ function AuswertungenPage() {
           <CardContent>
             {sollIstQuery.isLoading ? (
               <Skeleton className="aspect-video w-full" />
+            ) : sollIstQuery.isError ? (
+              <ErrorState />
             ) : (sollIstQuery.data?.teilnehmer_pro_monat.length ?? 0) === 0 ? (
               <EmptyState />
             ) : (
@@ -214,6 +259,8 @@ function AuswertungenPage() {
           <CardContent>
             {auslastungQuery.isLoading ? (
               <Skeleton className="aspect-video w-full" />
+            ) : auslastungQuery.isError ? (
+              <ErrorState />
             ) : auslastungDaten.length === 0 ? (
               <EmptyState />
             ) : (
@@ -244,18 +291,56 @@ function AuswertungenPage() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Buchungen je Monat</CardTitle>
-            <CardDescription>Zeitreihe über den gewählten Zeitraum</CardDescription>
+          <CardHeader className="gap-3">
+            <div>
+              <CardTitle className="text-base">Buchungen je Monat</CardTitle>
+              <CardDescription>Zeitreihe über den gewählten Zeitraum</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Status</Label>
+                <Select value={zeitreiheStatus} onValueChange={setZeitreiheStatus}>
+                  <SelectTrigger className="h-8 w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALLE}>Alle Status</SelectItem>
+                    {Object.entries(STATUS_LABEL).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">Angebotsart</Label>
+                <Select value={zeitreiheAngebotsart} onValueChange={setZeitreiheAngebotsart}>
+                  <SelectTrigger className="h-8 w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALLE}>Alle Angebotsarten</SelectItem>
+                    {(angebotsartenQuery.data ?? []).map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {sollIstQuery.isLoading ? (
+            {zeitreiheQuery.isLoading ? (
               <Skeleton className="aspect-video w-full" />
-            ) : (sollIstQuery.data?.teilnehmer_pro_monat.length ?? 0) === 0 ? (
+            ) : zeitreiheQuery.isError ? (
+              <ErrorState />
+            ) : (zeitreiheQuery.data?.length ?? 0) === 0 ? (
               <EmptyState />
             ) : (
               <ChartContainer config={zeitreiheConfig}>
-                <LineChart data={sollIstQuery.data?.teilnehmer_pro_monat} margin={{ left: 4, right: 12 }}>
+                <LineChart data={zeitreiheQuery.data} margin={{ left: 4, right: 12 }}>
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="monat" tickLine={false} axisLine={false} tickMargin={8} />
                   <YAxis tickLine={false} axisLine={false} allowDecimals={false} width={36} />
@@ -282,5 +367,18 @@ function EmptyState() {
     <div className="flex aspect-video w-full items-center justify-center text-sm text-muted-foreground">
       Keine Daten im gewählten Zeitraum.
     </div>
+  )
+}
+
+function ErrorState() {
+  return (
+    <Alert variant="destructive">
+      <TriangleAlert className="h-4 w-4" />
+      <AlertTitle>Auswertung nicht verfügbar</AlertTitle>
+      <AlertDescription>
+        Die Daten konnten nicht geladen werden — evtl. fehlt die Berechtigung oder die Verbindung ist
+        unterbrochen. Bitte später erneut versuchen.
+      </AlertDescription>
+    </Alert>
   )
 }

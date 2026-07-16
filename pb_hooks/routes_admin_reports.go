@@ -7,6 +7,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/pocketbase/dbx"
@@ -27,6 +28,23 @@ func zeitbereichUTC(vonStr, bisStr string) (string, string, bool) {
 		return "", "", false
 	}
 	return von.UTC().Format(pbTimeLayout), bis.AddDate(0, 0, 1).UTC().Format(pbTimeLayout), true
+}
+
+// monatBerlin buckets a UTC datetime string (as stored/scanned from PB) into a
+// "YYYY-MM" key in Berlin-local time. SQLite has no timezone DB, so month
+// bucketing on the raw UTC start would misplace bookings around midnight at the
+// month boundary (and shift by the Berlin offset); we therefore fetch the raw
+// per-row starts and bucket them here (DST-safe via berlinLoc()).
+func monatBerlin(startRaw string) string {
+	for _, layout := range []string{pbTimeLayout, "2006-01-02 15:04:05Z", "2006-01-02 15:04:05.000", "2006-01-02 15:04:05"} {
+		if t, err := time.Parse(layout, startRaw); err == nil {
+			return t.In(berlinLoc()).Format("2006-01")
+		}
+	}
+	if len(startRaw) >= 7 {
+		return startRaw[:7]
+	}
+	return startRaw
 }
 
 func registerAdminReportRoutes(app *pocketbase.PocketBase) {
@@ -57,15 +75,24 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 				selectExpr = "COALESCE(NULLIF(b.herkunft_bundesland,''), '(ohne Angabe)') AS gruppe"
 			}
 
-			statusFilter := ""
+			// Default: nur reale Besuche (bestätigt + durchgeführt), damit
+			// angefragte/abgelehnte/stornierte/verfallene Anfragen die
+			// Herkunftsstatistik nicht aufblähen. Ein expliziter status-Param
+			// überschreibt das (z.B. zur Analyse einzelner Status).
+			statusFilter := " AND b.status IN ('bestaetigt','durchgefuehrt')"
 			if s := q.Get("status"); s != "" {
 				statusFilter = " AND b.status = {:status}"
 				params["status"] = s
 			}
 
-			sql := "SELECT " + selectExpr + ", COUNT(*) AS anzahl, " +
-				"COALESCE(SUM(b.teilnehmer_geplant),0) AS teilnehmer " +
-				"FROM buchungen b " + joinExpr +
+			// Für durchgeführte Buchungen zählt die tatsächliche Teilnehmerzahl
+			// (teilnehmer_ist, Fallback teilnehmer_geplant), sonst die Planung.
+			teilnehmerExpr := "COALESCE(SUM(CASE WHEN b.status='durchgefuehrt' " +
+				"THEN COALESCE(b.teilnehmer_ist, b.teilnehmer_geplant) " +
+				"ELSE b.teilnehmer_geplant END),0) AS teilnehmer"
+
+			sql := "SELECT " + selectExpr + ", COUNT(*) AS anzahl, " + teilnehmerExpr +
+				" FROM buchungen b " + joinExpr +
 				" WHERE b.start >= {:von} AND b.start < {:bis}" + statusFilter +
 				" GROUP BY " + groupExpr + " ORDER BY anzahl DESC"
 
@@ -89,24 +116,45 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 			}
 			params := dbx.Params{"von": von, "bis": bis}
 
-			var teilnehmer []struct {
-				Monat    string `db:"monat" json:"monat"`
-				Geplant  int    `db:"geplant" json:"teilnehmer_geplant"`
-				Ist      int    `db:"ist" json:"teilnehmer_ist"`
-				Buchungen int   `db:"buchungen" json:"buchungen"`
+			// Rohzeilen holen und in Go nach Berliner Lokalmonat bucketen
+			// (strftime über die UTC-Startzeit würde am Monatsrand danebenliegen).
+			var rohzeilen []struct {
+				Start   string `db:"start"`
+				Geplant int    `db:"geplant"`
+				Ist     int    `db:"ist"`
 			}
 			tnSQL := `
-				SELECT strftime('%Y-%m', b.start) AS monat,
-				       COALESCE(SUM(b.teilnehmer_geplant),0) AS geplant,
-				       COALESCE(SUM(b.teilnehmer_ist),0) AS ist,
-				       COUNT(*) AS buchungen
+				SELECT b.start AS start,
+				       COALESCE(b.teilnehmer_geplant,0) AS geplant,
+				       COALESCE(b.teilnehmer_ist,0) AS ist
 				FROM buchungen b
 				WHERE b.start >= {:von} AND b.start < {:bis}
-				  AND b.status IN ('bestaetigt','durchgefuehrt')
-				GROUP BY monat ORDER BY monat`
-			if err := app.DB().NewQuery(tnSQL).Bind(params).All(&teilnehmer); err != nil {
+				  AND b.status IN ('bestaetigt','durchgefuehrt')`
+			if err := app.DB().NewQuery(tnSQL).Bind(params).All(&rohzeilen); err != nil {
 				return apis.NewApiError(http.StatusInternalServerError, "Auswertung fehlgeschlagen.", nil)
 			}
+
+			type sollIstMonat struct {
+				Monat     string `json:"monat"`
+				Geplant   int    `json:"teilnehmer_geplant"`
+				Ist       int    `json:"teilnehmer_ist"`
+				Buchungen int    `json:"buchungen"`
+			}
+			idx := map[string]int{}
+			teilnehmer := make([]sollIstMonat, 0)
+			for _, r := range rohzeilen {
+				m := monatBerlin(r.Start)
+				i, ok := idx[m]
+				if !ok {
+					i = len(teilnehmer)
+					idx[m] = i
+					teilnehmer = append(teilnehmer, sollIstMonat{Monat: m})
+				}
+				teilnehmer[i].Geplant += r.Geplant
+				teilnehmer[i].Ist += r.Ist
+				teilnehmer[i].Buchungen++
+			}
+			sort.Slice(teilnehmer, func(a, b int) bool { return teilnehmer[a].Monat < teilnehmer[b].Monat })
 
 			var referenten struct {
 				Geplant    int `db:"geplant" json:"referenten_geplant"`
@@ -127,6 +175,58 @@ func registerAdminReportRoutes(app *pocketbase.PocketBase) {
 				"teilnehmer_pro_monat": teilnehmer,
 				"referenten":           referenten,
 			})
+		}).Bind(auth).BindFunc(personal)
+
+		// ---- Buchungen je Monat (Zeitreihe) ----------------------------
+		// SPEC §5.4: „Zeitreihe Buchungen/Monat (Line, Filter Status/Angebotsart)".
+		// Zählt Buchungen pro Berliner Lokalmonat; ohne status/angebotsart-Param
+		// über ALLE Status (im Gegensatz zur soll-ist-Reihe, die nur
+		// bestätigt/durchgeführt zeigt).
+		se.Router.GET("/api/admin/reports/buchungen-zeitreihe", func(e *core.RequestEvent) error {
+			q := e.Request.URL.Query()
+			von, bis, ok := zeitbereichUTC(q.Get("von"), q.Get("bis"))
+			if !ok {
+				return apis.NewBadRequestError("Ungültiger Zeitraum (von/bis als YYYY-MM-DD).", nil)
+			}
+			params := dbx.Params{"von": von, "bis": bis}
+			filter := ""
+			if s := q.Get("status"); s != "" {
+				filter += " AND b.status = {:status}"
+				params["status"] = s
+			}
+			if a := q.Get("angebotsart"); a != "" {
+				filter += " AND b.angebotsart = {:angebotsart}"
+				params["angebotsart"] = a
+			}
+
+			var rohzeilen []struct {
+				Start string `db:"start"`
+			}
+			sql := "SELECT b.start AS start FROM buchungen b" +
+				" WHERE b.start >= {:von} AND b.start < {:bis}" + filter
+			if err := app.DB().NewQuery(sql).Bind(params).All(&rohzeilen); err != nil {
+				return apis.NewApiError(http.StatusInternalServerError, "Auswertung fehlgeschlagen.", nil)
+			}
+
+			type monatZeile struct {
+				Monat     string `json:"monat"`
+				Buchungen int    `json:"buchungen"`
+			}
+			idx := map[string]int{}
+			monate := make([]monatZeile, 0)
+			for _, r := range rohzeilen {
+				m := monatBerlin(r.Start)
+				i, ok := idx[m]
+				if !ok {
+					i = len(monate)
+					idx[m] = i
+					monate = append(monate, monatZeile{Monat: m})
+				}
+				monate[i].Buchungen++
+			}
+			sort.Slice(monate, func(a, b int) bool { return monate[a].Monat < monate[b].Monat })
+
+			return e.JSON(http.StatusOK, map[string]any{"monate": monate})
 		}).Bind(auth).BindFunc(personal)
 
 		// ---- Referenten-Auslastung -------------------------------------

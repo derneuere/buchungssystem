@@ -1,10 +1,11 @@
 // /admin/buchungen — Liste mit Filtern (Status, Zeitraum, Angebotsart) + Pagination.
 // Filterzustand lebt in der URL (validateSearch) → teilbare/zurücknavigierbare Links.
 
+import { useEffect, useState } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react'
 
 import { pb } from '@/lib/pocketbase'
 import type { Angebotsart, AuskunftBuchung, Buchung, BuchungStatus } from '@/lib/types'
@@ -28,6 +29,8 @@ const buchungenSearchSchema = z.object({
   angebotsart: z.string().optional(),
   von: z.string().optional(),
   bis: z.string().optional(),
+  q: z.string().optional(),
+  sort: z.enum(['start', '-start']).optional(),
   page: z.coerce.number().int().min(1).optional(),
 })
 
@@ -52,6 +55,16 @@ function buildFilter(search: BuchungenSearch): string {
   if (search.bis) {
     const iso = new Date(`${search.bis}T23:59:59`).toISOString()
     parts.push(`start <= "${iso}"`)
+  }
+  if (search.q && search.q.trim()) {
+    // Freitextsuche über Name/E-Mail/Einrichtung; pb.filter escaped den Wert.
+    const term = search.q.trim()
+    parts.push(
+      pb.filter(
+        '(kontakt_name ~ {:q} || kontakt_email ~ {:q} || herkunft_einrichtungsname ~ {:q})',
+        { q: term },
+      ),
+    )
   }
   return parts.join(' && ')
 }
@@ -79,7 +92,7 @@ function PersonalBuchungenListe() {
     queryFn: () =>
       pb.collection('buchungen').getList<Buchung>(page, PER_PAGE, {
         filter: buildFilter(search),
-        sort: '-created',
+        sort: search.sort ?? '-created',
         expand: 'angebotsart,thema',
       }),
   })
@@ -91,6 +104,34 @@ function PersonalBuchungenListe() {
   function goToPage(next: number) {
     navigate({ search: (prev) => ({ ...prev, page: next }) })
   }
+
+  // Freitextsuche: lokaler Eingabestand, entprellt in die URL (300 ms).
+  const [suchtext, setSuchtext] = useState(search.q ?? '')
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const trimmed = suchtext.trim()
+      if (trimmed !== (search.q ?? '')) {
+        updateSearch({ q: trimmed || undefined })
+      }
+    }, 300)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suchtext])
+
+  // Termin-Sortierung: Klick auf die Spalte toggelt auf/absteigend; Default
+  // bleibt -created (keine explizite Termin-Sortierung gesetzt).
+  function toggleTerminSort() {
+    const next = search.sort === '-start' ? 'start' : '-start'
+    navigate({ search: (prev) => ({ ...prev, sort: next, page: 1 }) })
+  }
+  const terminSortIcon =
+    search.sort === 'start' ? (
+      <ArrowUp className="h-3.5 w-3.5" />
+    ) : search.sort === '-start' ? (
+      <ArrowDown className="h-3.5 w-3.5" />
+    ) : (
+      <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+    )
 
   const totalPages = buchungenQuery.data ? Math.max(1, buchungenQuery.data.totalPages) : 1
 
@@ -113,7 +154,20 @@ function PersonalBuchungenListe() {
         <CardHeader>
           <CardTitle className="text-base">Filter</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="filter-suche">Suche</Label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="filter-suche"
+                placeholder="Name, E-Mail oder Einrichtung …"
+                className="pl-8"
+                value={suchtext}
+                onChange={(e) => setSuchtext(e.target.value)}
+              />
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Status</Label>
@@ -182,7 +236,17 @@ function PersonalBuchungenListe() {
               <TableRow>
                 <TableHead>Kontakt</TableHead>
                 <TableHead>Angebot</TableHead>
-                <TableHead>Termin</TableHead>
+                <TableHead>
+                  <button
+                    type="button"
+                    onClick={toggleTerminSort}
+                    className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 font-medium hover:bg-accent"
+                    aria-label="Nach Termin sortieren"
+                  >
+                    Termin
+                    {terminSortIcon}
+                  </button>
+                </TableHead>
                 <TableHead>Teiln.</TableHead>
                 <TableHead>Herkunft</TableHead>
                 <TableHead>Status</TableHead>
@@ -361,6 +425,10 @@ function AuskunftBuchungenListe() {
           </Table>
         </CardContent>
       </Card>
+
+      <p className="text-sm text-muted-foreground">
+        {query.data ? `${items.length} Termine im Zeitraum` : ''}
+      </p>
     </div>
   )
 }

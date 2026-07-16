@@ -3,6 +3,7 @@ import type {
   AdminBuchungInput,
   AuskunftBuchung,
   AuskunftBuchungDetail,
+  BuchungenZeitreiheMonat,
   BuchungsanfrageInput,
   BuchungsanfrageResponse,
   HerkunftReportZeile,
@@ -163,6 +164,17 @@ export function reportSollIst(params: {
   bis: string
 }): Promise<SollIstReport> {
   return pb.send('/api/admin/reports/soll-ist', { method: 'GET', query: params })
+}
+
+export function reportBuchungenZeitreihe(params: {
+  von: string
+  bis: string
+  status?: string
+  angebotsart?: string
+}): Promise<BuchungenZeitreiheMonat[]> {
+  return pb
+    .send('/api/admin/reports/buchungen-zeitreihe', { method: 'GET', query: params })
+    .then((r: { monate?: BuchungenZeitreiheMonat[] }) => r.monate ?? [])
 }
 
 export function reportReferentenAuslastung(params: {

@@ -47,7 +47,7 @@ function PersonalDashboard() {
   const now = useJetzt()
   const in7 = addDays(now, 7)
   const naechsteTermineQuery = useQuery({
-    queryKey: ['admin', 'dashboard', 'naechste-termine'],
+    queryKey: ['admin', 'dashboard', 'naechste-termine', tagKey(now)],
     queryFn: () =>
       pb.collection('buchungen').getList<Buchung>(1, 8, {
         filter: `status = "bestaetigt" && start >= "${now.toISOString()}" && start <= "${in7.toISOString()}"`,
@@ -73,7 +73,9 @@ function PersonalDashboard() {
   const wochenStart = startOfWeek(now, { weekStartsOn: 1 })
   const wochenEnde = endOfWeek(now, { weekStartsOn: 1 })
   const auslastungQuery = useQuery({
-    queryKey: ['admin', 'dashboard', 'auslastung-woche'],
+    // Wochenschlüssel (Montag der aktuellen Woche) hält die Kennzahl im
+    // Testmodus mit simuliertem „Jetzt" aktuell.
+    queryKey: ['admin', 'dashboard', 'auslastung-woche', tagKey(wochenStart)],
     queryFn: async () => {
       const [einstellungenListe, buchungenWoche] = await Promise.all([
         pb.collection('einstellungen').getFullList<Einstellungen>(),
@@ -144,7 +146,7 @@ function PersonalDashboard() {
             )}
             <CardDescription className="mt-1">
               {auslastungQuery.data
-                ? `${auslastungQuery.data.belegt} von ca. ${auslastungQuery.data.kapazitaet} möglichen Terminslots`
+                ? `${auslastungQuery.data.belegt} von ca. ${auslastungQuery.data.kapazitaet} Terminslots · zählt angefragte + bestätigte Buchungen`
                 : 'wird berechnet …'}
             </CardDescription>
           </CardContent>

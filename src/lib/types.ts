@@ -396,6 +396,14 @@ export interface SollIstReport {
   }
 }
 
+// GET /api/admin/reports/buchungen-zeitreihe -> { monate: BuchungenZeitreiheMonat[] }
+// Zählt Buchungen je Berliner Lokalmonat; optionale Filter status/angebotsart,
+// Default: alle Status.
+export interface BuchungenZeitreiheMonat {
+  monat: string // YYYY-MM
+  buchungen: number
+}
+
 // GET /api/admin/reports/referenten-auslastung -> { referenten: ReferentenAuslastungZeile[] }
 export interface ReferentenAuslastungZeile {
   referent_id: string
